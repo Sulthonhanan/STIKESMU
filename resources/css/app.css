@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    @import url('https://fonts.bunny.net/css?family=inter:400,500,600,700|outfit:400,500,600,700,800&display=swap');
+
+    body {
+        font-family: 'Inter', sans-serif;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Outfit', sans-serif;
+    }
+}
