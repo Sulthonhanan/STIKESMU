@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'sia' => [
+        'url' => env('SIA_API_URL', 'https://dev.stikesmuwsb.ac.id'),
+        'secret' => env('SIA_API_SECRET', 'sia-stikes-pmb-secret-2026'),
+    ],
+
 ];

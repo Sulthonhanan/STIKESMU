@@ -10,27 +10,23 @@
                 </div>
             </div>
             
-            <div class="hidden md:flex space-x-8 items-center">
-                <a href="/" class="text-white hover:text-accent font-medium transition duration-300">Beranda</a>
-                <a href="/halaman/sejarah-kampus" class="text-white hover:text-accent font-medium transition duration-300">Profil</a>
-                <a href="/program-studi" class="text-white hover:text-accent font-medium transition duration-300">Program Studi</a>
-                <a href="/berita" class="text-white hover:text-accent font-medium transition duration-300">Berita</a>
-                <a href="/dokumen" class="text-white hover:text-accent font-medium transition duration-300">Dokumen</a>
-                <a href="{{ route('pmb.status_check') }}" class="text-white hover:text-accent font-medium transition duration-300">Cek Status PMB</a>
-                <a href="{{ route('pmb.jalur') }}" class="bg-accent text-primary px-5 py-2 rounded-full font-bold hover:bg-white hover:shadow-lg transform hover:-translate-y-0.5 transition duration-300">PMB Online</a>
+            <div class="hidden md:flex space-x-4 items-center text-sm">
+                <a href="/" class="text-white hover:text-accent font-medium transition duration-300 whitespace-nowrap">Beranda</a>
+                <a href="/halaman/sejarah-kampus" class="text-white hover:text-accent font-medium transition duration-300 whitespace-nowrap">Profil</a>
+                <a href="/program-studi" class="text-white hover:text-accent font-medium transition duration-300 whitespace-nowrap">Program Studi</a>
+                <a href="/berita" class="text-white hover:text-accent font-medium transition duration-300 whitespace-nowrap">Berita</a>
+                <a href="/dokumen" class="text-white hover:text-accent font-medium transition duration-300 whitespace-nowrap">Dokumen</a>
+                <a href="{{ route('pmb.status_check') }}" class="text-white hover:text-accent font-medium transition duration-300 whitespace-nowrap">Cek Status PMB</a>
+                <a href="{{ route('pmb.jalur') }}" class="bg-accent text-primary px-4 py-2 rounded-full font-bold hover:bg-white hover:shadow-lg transform hover:-translate-y-0.5 transition duration-300 whitespace-nowrap">PMB Online</a>
 
-                <!-- User Dropdown -->
+                <!-- User Dropdown / Login Link -->
+                @auth
                 <div class="relative" x-data="{ open: false }">
-                    <button @click="open = !open" @click.away="open = false" class="flex items-center gap-2 text-white hover:text-accent transition duration-300 focus:outline-none">
-                        @auth
-                            <div class="w-8 h-8 rounded-full bg-white text-primary flex items-center justify-center font-bold text-sm">
-                                {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-                            </div>
-                        @else
-                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
-                            <span class="font-medium">Login</span>
-                        @endauth
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" :class="{'rotate-180': open}"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                    <button @click="open = !open" @click.away="open = false" class="flex items-center gap-1.5 text-white hover:text-accent transition duration-300 focus:outline-none">
+                        <div class="w-8 h-8 rounded-full bg-white text-primary flex items-center justify-center font-bold text-sm flex-shrink-0">
+                            {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                        </div>
+                        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" :class="{'rotate-180': open}"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                     </button>
                     
                     <div x-show="open" 
@@ -40,24 +36,30 @@
                          x-transition:leave="transition ease-in duration-75"
                          x-transition:leave-start="opacity-100 scale-100"
                          x-transition:leave-end="opacity-0 scale-95"
-                         class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 border border-gray-100 hidden" 
-                         :class="{'hidden': !open}" style="display: none;">
-                        @auth
-                            @hasanyrole('Super Admin|Admin CMS')
-                                <a href="{{ route('admin.dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-primary hover:text-white transition">Dashboard Admin</a>
-                            @else
-                                <a href="{{ route('dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-primary hover:text-white transition">Dashboard User</a>
-                            @endhasanyrole
-                            <div class="border-t border-gray-100 my-1"></div>
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <button type="submit" class="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition">Logout</button>
-                            </form>
+                         class="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg py-2 border border-gray-100"
+                         style="display: none;">
+                        <div class="px-4 py-2 border-b border-gray-100">
+                            <p class="text-xs text-gray-400">Masuk sebagai</p>
+                            <p class="text-sm font-semibold text-gray-800 truncate">{{ auth()->user()->name }}</p>
+                        </div>
+                        @hasanyrole('Super Admin|Admin CMS')
+                            <a href="{{ route('admin.dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-primary hover:text-white transition">Dashboard Admin</a>
                         @else
-                            <a href="{{ route('login') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-primary hover:text-white transition">Login Admin</a>
-                        @endauth
+                            <a href="{{ route('dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-primary hover:text-white transition">Dashboard User</a>
+                        @endhasanyrole
+                        <div class="border-t border-gray-100 my-1"></div>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition">Logout</button>
+                        </form>
                     </div>
                 </div>
+                @else
+                <a href="{{ route('login') }}" class="flex items-center gap-1.5 text-white hover:text-accent font-semibold transition duration-300 bg-white/10 px-3 py-2 rounded-full border border-white/20 hover:bg-white/20 whitespace-nowrap">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
+                    <span>Login</span>
+                </a>
+                @endauth
             </div>
 
             <!-- Mobile menu button -->

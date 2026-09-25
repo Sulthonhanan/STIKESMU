@@ -207,21 +207,80 @@
                                         $cicilan2   = $totalBiaya * 0.5;
 
                                         // Info Akun Login SIA
-                                        $prodiCode   = ($registration->prodi === 'S1 Gizi') ? '02' : '01';
-                                        $idPmbPadded = str_pad((string)$registration->id, 4, '0', STR_PAD_LEFT);
-                                        $nimGen      = date('Y') . $prodiCode . $idPmbPadded;
-
-                                        $cleanName   = preg_replace('/[^a-zA-Z0-9\s]/', '', $registration->nama_lengkap);
+                                        $cleanName   = preg_replace('/[^a-zA-Z\s]/', '', $registration->nama_lengkap);
                                         $cleanName   = strtolower(trim(preg_replace('/\s+/', ' ', $cleanName)));
                                         $nameSlug    = str_replace(' ', '.', $cleanName);
                                         $tahun2Digit = date('y');
-                                        $emailSiaGen = "{$nameSlug}.{$tahun2Digit}@stikesmu.ac.id";
-                                        $passSiaGen  = $idPmbPadded;
+                                        $emailSiaGen = "{$nameSlug}.{$tahun2Digit}@stikesmuwsb.ac.id";
+                                        $passSiaGen  = substr($registration->nomor_pendaftaran, -4);
+
+                                        // Hitung Deadline 7 Hari
+                                        $tglLulus     = $registration->tgl_lulus_seleksi ?? $registration->updated_at;
+                                        $deadline     = $tglLulus ? $tglLulus->copy()->addDays(7) : null;
+                                        $deadlineIso  = $deadline ? $deadline->toIso8601String() : null;
+                                        $isLunas      = in_array($registration->status_pembayaran_daftar_ulang, ['Cicilan 1 Lunas', 'Lunas Total']);
                                     @endphp
 
                                     <p class="text-emerald-100 text-sm md:text-base leading-relaxed">
                                         Selamat kepada <strong class="text-white underline">{{ $registration->nama_lengkap }}</strong>! Anda secara resmi dinyatakan diterima sebagai Calon Mahasiswa Baru Program Studi <strong>{{ $registration->prodi }}</strong> STIKES Muhammadiyah Wonosobo T.A. 2026/2027.
                                     </p>
+
+                                    {{-- COUNTDOWN DEADLINE 7 HARI --}}
+                                    @if(!$isLunas && $deadline)
+                                    <div class="bg-red-950/80 border border-red-500/40 rounded-2xl p-4 text-white shadow-lg"
+                                         x-data="{
+                                            deadline: new Date('{{ $deadlineIso }}').getTime(),
+                                            now: new Date().getTime(),
+                                            days: 0, hours: 0, minutes: 0, seconds: 0, expired: false,
+                                            updateTimer() {
+                                                this.now = new Date().getTime();
+                                                let diff = this.deadline - this.now;
+                                                if (diff <= 0) {
+                                                    this.expired = true;
+                                                    return;
+                                                }
+                                                this.days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                                                this.hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                                this.minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                                                this.seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                                            }
+                                         }"
+                                         x-init="updateTimer(); setInterval(() => updateTimer(), 1000);">
+                                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                            <div class="flex items-center gap-2.5">
+                                                <span class="text-2xl animate-pulse">⏳</span>
+                                                <div>
+                                                    <h5 class="font-bold text-sm text-yellow-300 uppercase tracking-wider">Batas Waktu Registrasi Ulang (7 Hari)</h5>
+                                                    <p class="text-xs text-gray-300">Batas akhir: <strong class="text-white">{{ $deadline->isoFormat('D MMMM Y, HH:mm') }} WIB</strong></p>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-1.5 font-mono text-center" x-show="!expired">
+                                                <div class="bg-black/40 px-2.5 py-1 rounded-lg border border-white/10">
+                                                    <span class="text-base font-bold text-yellow-400" x-text="days">0</span>
+                                                    <span class="block text-xxs text-gray-400 uppercase">Hari</span>
+                                                </div>
+                                                <span class="text-yellow-400 font-bold">:</span>
+                                                <div class="bg-black/40 px-2.5 py-1 rounded-lg border border-white/10">
+                                                    <span class="text-base font-bold text-yellow-400" x-text="String(hours).padStart(2, '0')">00</span>
+                                                    <span class="block text-xxs text-gray-400 uppercase">Jam</span>
+                                                </div>
+                                                <span class="text-yellow-400 font-bold">:</span>
+                                                <div class="bg-black/40 px-2.5 py-1 rounded-lg border border-white/10">
+                                                    <span class="text-base font-bold text-yellow-400" x-text="String(minutes).padStart(2, '0')">00</span>
+                                                    <span class="block text-xxs text-gray-400 uppercase">Menit</span>
+                                                </div>
+                                                <span class="text-yellow-400 font-bold">:</span>
+                                                <div class="bg-black/40 px-2.5 py-1 rounded-lg border border-white/10">
+                                                    <span class="text-base font-bold text-yellow-400" x-text="String(seconds).padStart(2, '0')">00</span>
+                                                    <span class="block text-xxs text-gray-400 uppercase">Detik</span>
+                                                </div>
+                                            </div>
+                                            <div x-show="expired" style="display: none;" class="text-xs font-bold text-red-300 bg-red-900/60 px-3 py-1.5 rounded-lg border border-red-500/50">
+                                                Batas waktu telah berakhir
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @endif
 
                                     {{-- KARTU AKUN LOGIN SIA --}}
                                     <div class="bg-yellow-400 text-gray-900 rounded-2xl p-5 border-2 border-yellow-300 shadow-xl space-y-3">
@@ -232,26 +291,22 @@
                                             </h4>
                                         </div>
                                         <p class="text-xs text-gray-800 font-medium">
-                                            Data Anda telah otomatis disinkronkan ke Sistem Informasi Akademik. Gunakan akun berikut untuk login ke portal SIA:
+                                            Data Anda telah disinkronkan ke Sistem Informasi Akademik. Silakan login ke portal SIAKAD untuk mengecek Informasi Masa Studi & Status Penerimaan Anda:
                                         </p>
-                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm font-mono">
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm font-mono">
                                             <div class="bg-white/95 rounded-xl p-3 border border-yellow-500/30 shadow-sm">
-                                                <span class="text-xs text-gray-500 font-bold block mb-0.5">NIM Mahasiswa</span>
-                                                <span class="font-extrabold text-secondary text-base">{{ $nimGen }}</span>
-                                            </div>
-                                            <div class="bg-white/95 rounded-xl p-3 border border-yellow-500/30 shadow-sm">
-                                                <span class="text-xs text-gray-500 font-bold block mb-0.5">Email Login SIA</span>
-                                                <span class="font-extrabold text-primary text-sm break-all">{{ $emailSiaGen }}</span>
+                                                <span class="text-xs text-gray-500 font-bold block mb-0.5">Email Login SIAKAD</span>
+                                                <span class="font-extrabold text-primary text-sm break-all select-all">{{ $emailSiaGen }}</span>
                                             </div>
                                             <div class="bg-white/95 rounded-xl p-3 border border-yellow-500/30 shadow-sm">
                                                 <span class="text-xs text-gray-500 font-bold block mb-0.5">Password Sementara</span>
-                                                <span class="font-extrabold text-red-600 text-base tracking-wider">{{ $passSiaGen }}</span>
+                                                <span class="font-extrabold text-red-600 text-base tracking-wider select-all">{{ $passSiaGen }}</span>
                                             </div>
                                         </div>
                                         <div class="pt-1 flex items-center justify-between gap-2 flex-wrap text-xs">
-                                            <span class="text-gray-800 font-medium">💡 Disarankan untuk segera mengganti password setelah pertama kali login ke SIA.</span>
-                                            <a href="http://127.0.0.1:8000/login" target="_blank" class="px-4 py-2 bg-secondary text-white font-extrabold rounded-lg hover:bg-secondary/90 transition shadow-md flex items-center gap-1.5">
-                                                <span>Buka Portal SIA</span>
+                                            <span class="text-gray-800 font-medium italic">📌 Nomor Induk Mahasiswa (NIM) resmi dan status aktif penuh akan tercantum di portal SIAKAD setelah verifikasi pembayaran daftar ulang.</span>
+                                            <a href="https://dev.stikesmuwsb.ac.id/login" target="_blank" class="px-4 py-2 bg-secondary text-white font-extrabold rounded-lg hover:bg-secondary/90 transition shadow-md flex items-center gap-1.5 ml-auto">
+                                                <span>Buka Portal SIAKAD</span>
                                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                                             </a>
                                         </div>
@@ -366,7 +421,7 @@
                                                 </div>
                                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                     <input type="file" name="foto_bukti" accept="image/jpeg,image/png,image/jpg" required class="block w-full text-xs text-gray-200 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-accent file:text-secondary hover:file:bg-yellow-300">
-                                                    <input type="number" name="nominal" value="{{ (int)$cicilan1 }}" placeholder="Nominal Transfer" class="px-3 py-2 rounded-xl bg-white/10 text-white border border-white/20 text-xs">
+                                                    <input type="text" name="nominal" value="{{ number_format($cicilan1, 0, ',', '.') }}" placeholder="Nominal Transfer" class="px-3 py-2 rounded-xl bg-white/10 text-white border border-white/20 text-xs" readonly>
                                                 </div>
                                                 <button type="submit" class="px-5 py-2.5 bg-accent text-secondary font-extrabold rounded-xl text-xs hover:bg-yellow-300 transition shadow-md">
                                                     Kirim Bukti Bayar Cicilan 1
@@ -385,7 +440,7 @@
                                                 </div>
                                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                     <input type="file" name="foto_bukti" accept="image/jpeg,image/png,image/jpg" required class="block w-full text-xs text-gray-200 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-accent file:text-secondary hover:file:bg-yellow-300">
-                                                    <input type="number" name="nominal" value="{{ (int)$cicilan2 }}" placeholder="Nominal Transfer" class="px-3 py-2 rounded-xl bg-white/10 text-white border border-white/20 text-xs">
+                                                    <input type="text" name="nominal" value="{{ number_format($cicilan2, 0, ',', '.') }}" placeholder="Nominal Transfer" class="px-3 py-2 rounded-xl bg-white/10 text-white border border-white/20 text-xs" readonly>
                                                 </div>
                                                 <button type="submit" class="px-5 py-2.5 bg-accent text-secondary font-extrabold rounded-xl text-xs hover:bg-yellow-300 transition shadow-md">
                                                     Kirim Bukti Bayar Cicilan 2

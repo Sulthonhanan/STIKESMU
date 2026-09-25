@@ -268,14 +268,15 @@
         <form method="GET" action="{{ route('admin.pmb.print_rekap') }}" style="display:flex;gap:8px;align-items:center;">
             <select name="prodi" onchange="this.form.submit()" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1px solid #ccc;">
                 <option value="">Semua Prodi</option>
-                <option value="S1 Farmasi" {{ $filterProdi === 'S1 Farmasi' ? 'selected' : '' }}>S1 Farmasi</option>
-                <option value="S1 Gizi" {{ $filterProdi === 'S1 Gizi' ? 'selected' : '' }}>S1 Gizi</option>
+                @foreach(\App\Models\ProgramStudi::orderBy('kode_nim')->get() as $ps)
+                <option value="{{ $ps->nama_prodi }}" {{ $filterProdi === $ps->nama_prodi ? 'selected' : '' }}>{{ $ps->nama_prodi }}</option>
+                @endforeach
             </select>
             <select name="gelombang" onchange="this.form.submit()" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1px solid #ccc;">
                 <option value="">Semua Gelombang</option>
-                @for($i = 1; $i <= 5; $i++)
-                    <option value="Gelombang {{ $i }}" {{ $filterGelombang === "Gelombang $i" ? 'selected' : '' }}>Gelombang {{ $i }}</option>
-                @endfor
+                @foreach(\App\Models\PmbWave::orderBy('id', 'asc')->get() as $w)
+                    <option value="{{ $w->nama_gelombang }}" {{ $filterGelombang === $w->nama_gelombang ? 'selected' : '' }}>{{ $w->nama_gelombang }}</option>
+                @endforeach
             </select>
         </form>
         <a href="{{ route('admin.pmb.index') }}" class="btn-back">← Kembali</a>
@@ -345,14 +346,13 @@
             <thead>
                 <tr>
                     <th class="no-col">No.</th>
+                    <th>NIM Resmi</th>
                     <th>No. Pendaftaran</th>
                     <th>Nama Lengkap</th>
                     <th>NIK</th>
-                    <th>NISN</th>
                     <th>Program Studi</th>
-                    <th>Jalur Seleksi</th>
                     <th>Gelombang</th>
-                    <th>Asal Sekolah</th>
+                    <th>Status Bayar</th>
                     <th>No. HP/WA</th>
                     <th>Tgl Daftar</th>
                 </tr>
@@ -361,23 +361,26 @@
                 @foreach($registrations as $i => $reg)
                     <tr>
                         <td class="no-col" style="text-align:center;">{{ $i + 1 }}</td>
-                        <td style="font-family:monospace;font-size:9pt;font-weight:bold;color:#7c1010;">{{ $reg->nomor_pendaftaran }}</td>
+                        <td style="font-family:monospace;font-size:9.5pt;font-weight:bold;color:#0e7040;">{{ $reg->nim ?? '-' }}</td>
+                        <td style="font-family:monospace;font-size:8.5pt;font-weight:bold;color:#555;">{{ $reg->nomor_pendaftaran }}</td>
                         <td class="nm-col">
                             {{ $reg->nama_lengkap }}
                             <br><span style="font-weight:normal;font-size:8pt;color:#888;">{{ $reg->tempat_lahir }}, {{ \Carbon\Carbon::parse($reg->tanggal_lahir)->translatedFormat('d F Y') }}</span>
                         </td>
                         <td style="font-family:monospace;font-size:8.5pt;">{{ $reg->nomor_ktp }}</td>
-                        <td style="font-family:monospace;font-size:8.5pt;">{{ $reg->nisn ?? '-' }}</td>
                         <td>
-                            <span class="badge {{ $reg->prodi === 'S1 Farmasi' ? 'badge-farmasi' : 'badge-gizi' }}">
+                            <span class="badge badge-farmasi">
                                 {{ $reg->prodi }}
                             </span>
                         </td>
-                        <td style="font-size:8.5pt;">{{ $reg->jalur_seleksi ?? 'Jalur Nilai Rapor' }}</td>
                         <td>
                             <span class="badge badge-gel">{{ $reg->gelombang ?: 'Tanpa Gelombang' }}</span>
                         </td>
-                        <td style="font-size:8.5pt;">{{ $reg->asal_sekolah }}<br><span style="color:#888;">{{ $reg->jurusan }} ({{ $reg->tahun_lulus }})</span></td>
+                        <td>
+                            <span class="badge" style="background-color: #d1fae5; color: #065f46; font-weight: bold;">
+                                {{ $reg->status_pembayaran_daftar_ulang ?? 'Belum Bayar' }}
+                            </span>
+                        </td>
                         <td style="font-size:8.5pt;">{{ $reg->no_hp }}</td>
                         <td style="font-size:8pt;color:#666;white-space:nowrap;">{{ $reg->created_at->setTimezone('Asia/Jakarta')->format('d/m/Y') }}</td>
                     </tr>

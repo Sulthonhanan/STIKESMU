@@ -3,7 +3,7 @@
 @section('title', 'Kelola Rincian Biaya PMB')
 
 @section('content')
-<div x-data="{ activeProdi: 'S1 Farmasi' }" class="space-y-6">
+<div x-data="{ activeProdi: '{{ $prodis[0] ?? 'S1 Farmasi' }}' }" class="space-y-6">
 
     <!-- Header Section -->
     <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">

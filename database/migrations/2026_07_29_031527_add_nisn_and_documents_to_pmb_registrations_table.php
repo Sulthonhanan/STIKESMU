@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('pmb_registrations', function (Blueprint $table) {
-            $table->string('nisn')->nullable()->after('nik');
+            $table->string('nisn')->nullable()->after('nomor_ktp');
             $table->string('npsn')->nullable()->after('nisn');
-            $table->string('raport_path')->nullable()->after('pas_foto_path');
+            $table->string('raport_path')->nullable()->after('pas_foto');
             $table->string('ijazah_path')->nullable()->after('raport_path');
         });
     }

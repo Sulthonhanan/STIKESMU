@@ -13,8 +13,11 @@ class PmbFeeController extends Controller
      */
     public function index()
     {
-        $prodis = ['S1 Farmasi', 'S1 Gizi'];
-        $gelombangs = ['Gelombang 1', 'Gelombang 2', 'Gelombang 3', 'Gelombang 4', 'Gelombang 5'];
+        $prodis = \App\Models\ProgramStudi::orderBy('kode_nim')->pluck('nama_prodi')->toArray();
+        $gelombangs = \App\Models\PmbWave::orderBy('id', 'asc')->pluck('nama_gelombang')->toArray();
+        if (empty($gelombangs)) {
+            $gelombangs = ['Gelombang 1', 'Gelombang 2', 'Gelombang 3', 'Gelombang 4', 'Gelombang 5'];
+        }
 
         $existingFees = PmbFee::all()->groupBy('prodi')->map(function ($item) {
             return $item->keyBy('gelombang');

@@ -36,8 +36,9 @@
             <div>
                 <select name="prodi" onchange="this.form.submit()" class="w-full rounded-xl border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
                     <option value="">Semua Program Studi</option>
-                    <option value="S1 Farmasi" {{ request('prodi') === 'S1 Farmasi' ? 'selected' : '' }}>S1 Farmasi</option>
-                    <option value="S1 Gizi" {{ request('prodi') === 'S1 Gizi' ? 'selected' : '' }}>S1 Gizi</option>
+                    @foreach($programStudis ?? \App\Models\ProgramStudi::orderBy('kode_nim')->get() as $prodi)
+                    <option value="{{ $prodi->nama_prodi }}" {{ request('prodi') === $prodi->nama_prodi ? 'selected' : '' }}>{{ $prodi->nama_prodi }}</option>
+                    @endforeach
                 </select>
             </div>
 
@@ -45,11 +46,11 @@
             <div>
                 <select name="gelombang" onchange="this.form.submit()" class="w-full rounded-xl border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-sm">
                     <option value="">Semua Gelombang</option>
-                    <option value="Gelombang 1" {{ request('gelombang') === 'Gelombang 1' ? 'selected' : '' }}>Gelombang 1 (Juli)</option>
-                    <option value="Gelombang 2" {{ request('gelombang') === 'Gelombang 2' ? 'selected' : '' }}>Gelombang 2 (Agustus)</option>
-                    <option value="Gelombang 3" {{ request('gelombang') === 'Gelombang 3' ? 'selected' : '' }}>Gelombang 3 (September)</option>
-                    <option value="Gelombang 4" {{ request('gelombang') === 'Gelombang 4' ? 'selected' : '' }}>Gelombang 4 (Oktober)</option>
-                    <option value="Gelombang 5" {{ request('gelombang') === 'Gelombang 5' ? 'selected' : '' }}>Gelombang 5 (November)</option>
+                    @foreach(\App\Models\PmbWave::orderBy('id', 'asc')->get() as $w)
+                        <option value="{{ $w->nama_gelombang }}" {{ request('gelombang') === $w->nama_gelombang ? 'selected' : '' }}>
+                            {{ $w->nama_gelombang }} ({{ $w->tanggal_mulai->translatedFormat('d M') }} – {{ $w->tanggal_selesai->translatedFormat('d M') }})
+                        </option>
+                    @endforeach
                 </select>
             </div>
 

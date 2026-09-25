@@ -34,6 +34,11 @@ class PostController extends Controller
 
         $validated['slug'] = Str::slug($validated['title']) . '-' . time();
         $validated['user_id'] = auth()->id();
+        $validated['content'] = $validated['body'];
+        $validated['status'] = $validated['is_published'] ? 'published' : 'draft';
+        if ($validated['is_published']) {
+            $validated['published_at'] = now();
+        }
 
         if ($request->hasFile('thumbnail')) {
             $validated['thumbnail'] = $request->file('thumbnail')->store('thumbnails', 'public');
@@ -60,6 +65,12 @@ class PostController extends Controller
             'thumbnail'    => 'nullable|image|max:2048',
         ]);
 
+        $validated['content'] = $validated['body'];
+        $validated['status'] = $validated['is_published'] ? 'published' : 'draft';
+        if ($validated['is_published'] && !$post->published_at) {
+            $validated['published_at'] = now();
+        }
+
         if ($request->hasFile('thumbnail')) {
             if ($post->thumbnail) Storage::disk('public')->delete($post->thumbnail);
             $validated['thumbnail'] = $request->file('thumbnail')->store('thumbnails', 'public');
@@ -75,5 +86,18 @@ class PostController extends Controller
         if ($post->thumbnail) Storage::disk('public')->delete($post->thumbnail);
         $post->delete();
         return redirect()->route('admin.posts.index')->with('success', 'Berita berhasil dihapus.');
+    }
+
+    public function uploadImage(Request $request)
+    {
+        $request->validate([
+            'image' => 'required|image|max:5120',
+        ]);
+
+        $path = $request->file('image')->store('posts_content', 'public');
+
+        return response()->json([
+            'url' => Storage::url($path),
+        ]);
     }
 }

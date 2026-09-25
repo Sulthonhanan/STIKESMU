@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\PmbRegistration;
+use App\Models\PmbWave;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class PmbController extends Controller
@@ -42,7 +44,9 @@ class PmbController extends Controller
 
         $registrations = $query->latest()->paginate(15)->withQueryString();
 
-        return view('admin.pmb.index', compact('registrations'));
+        $programStudis = \App\Models\ProgramStudi::orderBy('kode_nim')->get();
+
+        return view('admin.pmb.index', compact('registrations', 'programStudis'));
     }
 
     /**
@@ -57,7 +61,7 @@ class PmbController extends Controller
     /**
      * Update status pendaftaran.
      * Jika status diubah menjadi "Lulus Seleksi", data mahasiswa akan
-     * dikirim secara otomatis ke sistem SIA-STIKES via API.
+     * dikirim secara otomatis ke sistem SIA-STIKES via API (akses pra-bayar tanpa NIM).
      */
     public function updateStatus(Request $request, $id)
     {
@@ -69,26 +73,34 @@ class PmbController extends Controller
         $statusLama   = $registration->status;
         $statusBaru   = $request->input('status');
 
-        $registration->update(['status' => $statusBaru]);
+        $updateData = ['status' => $statusBaru];
+
+        // Catat tanggal kelulusan jika baru pertama kali lulus seleksi
+        if ($statusBaru === 'Lulus Seleksi' && empty($registration->tgl_lulus_seleksi)) {
+            $updateData['tgl_lulus_seleksi'] = now();
+        }
+
+        $registration->update($updateData);
 
         // --- Kirim data ke SIA jika status adalah "Lulus Seleksi" ---
         if ($statusBaru === 'Lulus Seleksi') {
             $hasilIntegrasi = $this->kirimKeSia($registration);
 
             if ($hasilIntegrasi['success']) {
-                $nim   = $hasilIntegrasi['data']['nim']        ?? '-';
                 $email = $hasilIntegrasi['data']['email_login'] ?? '-';
                 $pass  = $hasilIntegrasi['data']['password_sementara'] ?? '-';
 
+                $registration->update(['sia_account_created' => true]);
+
                 return redirect()
                     ->route('admin.pmb.show', $id)
-                    ->with('success', "Status berhasil diubah ke Lulus Seleksi. Data mahasiswa telah dikirim ke SIA.")
-                    ->with('sia_info', "NIM: {$nim} | Email Login SIA: {$email} | Password Sementara: {$pass}");
+                    ->with('success', "Status berhasil diubah ke Lulus Seleksi. Akun SIAKAD pra-bayar berhasil dibuat.")
+                    ->with('sia_info', "Email Login SIA: {$email} | Password Sementara: {$pass}");
             } else {
                 // Status tetap tersimpan, tapi tampilkan peringatan integrasi gagal
                 return redirect()
                     ->route('admin.pmb.show', $id)
-                    ->with('warning', "Status berhasil diubah, NAMUN pengiriman data ke SIA GAGAL: " . $hasilIntegrasi['message']);
+                    ->with('warning', "Status berhasil diubah, NAMUN sinkronisasi akun SIAKAD gagal: " . $hasilIntegrasi['message']);
             }
         }
 
@@ -103,21 +115,40 @@ class PmbController extends Controller
     public function syncSia($id)
     {
         $registration = PmbRegistration::findOrFail($id);
+        
+        // Auto-perbaiki format NIM jika pendaftar sudah memiliki NIM lama yang cacat (< 12 digit / tahun '00')
+        if (!empty($registration->nim)) {
+            $activeWave = PmbWave::getActiveWave();
+            $tahun = ($activeWave && !empty($activeWave->tahun_akademik)) ? (int) substr($activeWave->tahun_akademik, 0, 4) : (int) date('Y');
+            if (!$tahun || $tahun < 2000) {
+                $tahun = (int) date('Y');
+            }
+
+            $nimValid = PmbRegistration::repairNimIfInvalid($registration->nim, $registration->prodi, $tahun);
+            if ($nimValid !== $registration->nim) {
+                $registration->update(['nim' => $nimValid]);
+                $registration->refresh();
+            }
+        }
+
+        // 1. Import data pendaftar ke SIAKAD
         $hasilIntegrasi = $this->kirimKeSia($registration);
 
-        if ($hasilIntegrasi['success']) {
-            $nim   = $hasilIntegrasi['data']['nim']        ?? '-';
-            $email = $hasilIntegrasi['data']['email_login'] ?? '-';
-            $pass  = $hasilIntegrasi['data']['password_sementara'] ?? '-';
+        // 2. Jika punya NIM / sudah terverifikasi bayar, unlock access di SIAKAD
+        if (!empty($registration->nim) || in_array($registration->status_pembayaran_daftar_ulang, ['Cicilan 1 Lunas', 'Lunas Total'])) {
+            $statusBayar = $registration->status_pembayaran_daftar_ulang ?? 'Cicilan 1 Lunas';
+            $this->kirimStatusPembayaranKeSia($registration, $statusBayar, $registration->nim);
+        }
 
+        if ($hasilIntegrasi['success']) {
+            $nim   = $registration->nim ?? ($hasilIntegrasi['data']['nim'] ?? '-');
             return redirect()
                 ->back()
-                ->with('success', "Data mahasiswa berhasil disinkronkan ke SIA.")
-                ->with('sia_info', "NIM: {$nim} | Email Login SIA: {$email} | Password Sementara: {$pass}");
+                ->with('success', "Data mahasiswa " . $registration->nama_lengkap . " berhasil disinkronkan ke SIAKAD! (NIM: {$nim})");
         } else {
             return redirect()
                 ->back()
-                ->with('warning', "Gagal sinkronkan data ke SIA: " . $hasilIntegrasi['message']);
+                ->with('warning', "Catatan sinkronisasi SIAKAD: " . $hasilIntegrasi['message']);
         }
     }
 
@@ -129,12 +160,12 @@ class PmbController extends Controller
      */
     private function kirimKeSia(PmbRegistration $registration): array
     {
-        $siaUrl    = rtrim(env('SIA_API_URL', 'http://localhost:8000'), '/');
-        $siaSecret = env('SIA_API_SECRET', '');
+        $siaUrl    = rtrim(env('SIA_API_URL', 'https://dev.stikesmuwsb.ac.id'), '/');
+        $siaSecret = env('SIA_API_SECRET', 'sia-stikes-pmb-secret-2026');
         $endpoint  = $siaUrl . '/api/mahasiswa/import-pmb';
 
         try {
-            $response = \Illuminate\Support\Facades\Http::withHeaders([
+            $response = \Illuminate\Support\Facades\Http::withoutVerifying()->withHeaders([
                 'X-PMB-Secret' => $siaSecret,
                 'Accept'       => 'application/json',
             ])->timeout(15)->post($endpoint, [
@@ -149,9 +180,10 @@ class PmbController extends Controller
                 'tanggal_lahir'   => $registration->tanggal_lahir,
                 'asal_sekolah'    => $registration->asal_sekolah,
                 'jurusan'         => $registration->jurusan,
-                'tahun_lulus'     => $registration->tahun_lulus,
+                'tahun_lulus'     => (string) $registration->tahun_lulus,
                 'no_hp'           => $registration->no_hp,
                 'prodi'           => $registration->prodi,
+                'nim'             => $registration->nim,
                 'alamat_dusun'    => $registration->alamat_dusun,
                 'alamat_kecamatan_kabupaten' => $registration->alamat_kecamatan_kabupaten,
                 'nik_ayah'        => $registration->ktp_ayah,
@@ -251,6 +283,7 @@ class PmbController extends Controller
     /**
      * Verifikasi pembayaran daftar ulang (Staff Keuangan / Super Admin).
      * Pilihan aksi: 'Cicilan 1 Lunas', 'Lunas Total', 'Ditolak'.
+     * Saat pembayaran pertama kali disahkan, NIM mahasiswa digenerate secara sekuensial & atomik.
      */
     public function verifyPayment(Request $request, $id)
     {
@@ -274,11 +307,40 @@ class PmbController extends Controller
             $updateData['tanggal_bayar_cicilan_2'] = now()->toDateString();
         }
 
+        // Generate NIM atomik jika disetujui & belum punya NIM
+        $nimFinal = $registration->nim;
+        if (in_array($statusPembayaran, ['Cicilan 1 Lunas', 'Lunas Total'])) {
+            $updateData['tgl_verifikasi_pembayaran'] = now();
+
+            $activeWave = PmbWave::getActiveWave();
+            $tahun = ($activeWave && !empty($activeWave->tahun_akademik)) ? (int) substr($activeWave->tahun_akademik, 0, 4) : (int) date('Y');
+            if (!$tahun || $tahun < 2000) {
+                $tahun = (int) date('Y');
+            }
+
+            if (empty($nimFinal)) {
+                $nimFinal = PmbRegistration::generateNim($registration->prodi, $tahun);
+                $updateData['nim'] = $nimFinal;
+            } else {
+                $nimFinal = PmbRegistration::repairNimIfInvalid($nimFinal, $registration->prodi, $tahun);
+                $updateData['nim'] = $nimFinal;
+            }
+        }
+
         $registration->update($updateData);
 
-        // Jika status disahkan sebagai Cicilan 1 Lunas atau Lunas Total, sync status ke SIA
+        // Jika status disahkan sebagai Cicilan 1 Lunas atau Lunas Total, buka akses penuh & kirim NIM ke SIA
         if (in_array($statusPembayaran, ['Cicilan 1 Lunas', 'Lunas Total'])) {
-            $this->kirimStatusPembayaranKeSia($registration, $statusPembayaran);
+            $hasilSync = $this->kirimStatusPembayaranKeSia($registration, $statusPembayaran, $nimFinal);
+            
+            $msg = "Status pembayaran berhasil diverifikasi menjadi '{$statusPembayaran}'. NIM Resmi Mahasiswa: {$nimFinal}.";
+            if ($hasilSync['success'] && !empty($hasilSync['message'])) {
+                $msg .= " (" . $hasilSync['message'] . ")";
+            }
+
+            return redirect()
+                ->route('admin.pmb.show', $id)
+                ->with('success', $msg);
         }
 
         return redirect()
@@ -286,27 +348,73 @@ class PmbController extends Controller
             ->with('success', "Status pembayaran daftar ulang berhasil diperbarui menjadi '{$statusPembayaran}'.");
     }
 
+
     /**
-     * Mengirimkan pembaruan status pembayaran daftar ulang ke SIA via HTTP API.
+     * Mengirimkan pembaruan status pembayaran & NIM ke SIA via HTTP API untuk unlock akses penuh.
      */
-    private function kirimStatusPembayaranKeSia(PmbRegistration $registration, string $statusPembayaran): array
+    private function kirimStatusPembayaranKeSia(PmbRegistration $registration, string $statusPembayaran, ?string $nim = null): array
     {
         try {
-            $siaUrl = env('SIA_API_URL', 'http://127.0.0.1:8000');
+            $siaUrl = rtrim(env('SIA_API_URL', 'https://dev.stikesmuwsb.ac.id'), '/');
             $secret = env('SIA_API_SECRET', 'sia-stikes-pmb-secret-2026');
 
-            $response = \Illuminate\Support\Facades\Http::withHeaders([
+            // 1. Coba unlock access
+            $payloadUnlock = [
+                'pmb_id'            => $registration->id,
+                'nomor_pendaftaran' => $registration->nomor_pendaftaran,
+                'nomor_ktp'         => $registration->nomor_ktp,
+                'nama_lengkap'      => $registration->nama_lengkap,
+                'status_pembayaran' => $statusPembayaran,
+                'nim'               => $nim ?? $registration->nim,
+                'is_payment_verified' => true,
+            ];
+
+            $response = \Illuminate\Support\Facades\Http::withoutVerifying()->withHeaders([
                 'X-PMB-Secret' => $secret,
                 'Accept'       => 'application/json',
-            ])->post($siaUrl . '/api/mahasiswa/update-payment-status', [
-                'pmb_id'            => $registration->id,
-                'status_pembayaran' => $statusPembayaran,
-            ]);
+            ])->timeout(15)->post($siaUrl . '/api/mahasiswa/unlock-access', $payloadUnlock);
+
+            // Jika 404 (belum di-import ke SIAKAD), import data pendaftar dulu
+            if ($response->status() === 404) {
+                $importResp = \Illuminate\Support\Facades\Http::withoutVerifying()->withHeaders([
+                    'X-PMB-Secret' => $secret,
+                    'Accept'       => 'application/json',
+                ])->timeout(15)->post($siaUrl . '/api/mahasiswa/import-pmb', [
+                    'pmb_id'                     => $registration->id,
+                    'nomor_pendaftaran'          => $registration->nomor_pendaftaran,
+                    'nama_lengkap'               => $registration->nama_lengkap,
+                    'nomor_ktp'                  => $registration->nomor_ktp,
+                    'nisn'                       => $registration->nisn,
+                    'npsn'                       => $registration->npsn,
+                    'jenis_kelamin'              => $registration->jenis_kelamin,
+                    'tempat_lahir'               => $registration->tempat_lahir,
+                    'tanggal_lahir'              => $registration->tanggal_lahir,
+                    'asal_sekolah'               => $registration->asal_sekolah,
+                    'jurusan'                    => $registration->jurusan,
+                    'tahun_lulus'                => (string) $registration->tahun_lulus,
+                    'no_hp'                      => $registration->no_hp,
+                    'prodi'                      => $registration->prodi,
+                    'nim'                        => $nim ?? $registration->nim,
+                    'gelombang'                  => $registration->gelombang,
+                    'alamat_dusun'               => $registration->alamat_dusun,
+                    'alamat_kecamatan_kabupaten' => $registration->alamat_kecamatan_kabupaten,
+                    'nama_ayah'                  => $registration->nama_ayah,
+                    'nik_ayah'                   => $registration->ktp_ayah,
+                ]);
+
+                if ($importResp->successful()) {
+                    // Coba unlock lagi
+                    $response = \Illuminate\Support\Facades\Http::withoutVerifying()->withHeaders([
+                        'X-PMB-Secret' => $secret,
+                        'Accept'       => 'application/json',
+                    ])->timeout(15)->post($siaUrl . '/api/mahasiswa/unlock-access', $payloadUnlock);
+                }
+            }
 
             if ($response->successful()) {
-                return ['success' => true, 'message' => 'Status pembayaran berhasil dikirim ke SIA.'];
+                return ['success' => true, 'message' => 'Status pembayaran & NIM berhasil disinkronkan ke SIAKAD.'];
             } else {
-                return ['success' => false, 'message' => $response->json('message', 'Gagal kirim ke SIA')];
+                return ['success' => false, 'message' => $response->json('message', 'Gagal sinkronkan ke SIAKAD')];
             }
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error("PMB Payment Sync Error: " . $e->getMessage());

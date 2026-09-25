@@ -43,7 +43,7 @@
                 <label class="block text-sm font-semibold text-gray-700 mb-1.5">Peran (Role) <span class="text-red-500">*</span></label>
                 <select name="role" required class="w-full rounded-xl border-gray-300 focus:border-primary focus:ring-primary shadow-sm px-4 py-2.5 border">
                     @foreach($roles as $role)
-                        <option value="{{ $role->name }}" {{ old('role', $user->getRoleNames()->first() ?? '') == $role->name ? 'selected' : '' }}>
+                        <option value="{{ $role->name }}" {{ old('role', isset($user) ? ($user->getRoleNames()->first() ?? '') : '') == $role->name ? 'selected' : '' }}>
                             {{ $role->name }}
                         </option>
                     @endforeach

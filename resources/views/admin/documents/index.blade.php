@@ -39,7 +39,11 @@
                 </td>
                 <td class="px-6 py-4 text-sm text-gray-500">{{ $document->created_at->format('d M Y') }}</td>
                 <td class="px-6 py-4 text-right">
-                    <div class="flex items-center justify-end gap-2">
+                    <div class="flex items-center justify-end gap-3">
+                        <a href="{{ route('documents.download', $document) }}" class="text-xs font-semibold text-emerald-600 hover:underline flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            Unduh
+                        </a>
                         <a href="{{ route('admin.documents.edit', $document) }}" class="text-xs font-semibold text-primary hover:underline">Edit</a>
                         <form action="{{ route('admin.documents.destroy', $document) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus?')">
                             @csrf @method('DELETE')

@@ -42,6 +42,28 @@
                         <span class="text-gray-500">Jalur Seleksi:</span>
                         <span class="font-bold text-red-900 bg-red-50 px-2.5 py-0.5 rounded-full text-xs border border-red-200">{{ $registration->jalur_seleksi ?? 'Jalur Nilai Rapor' }}</span>
                     </div>
+                    @if(!empty($registration->jenis_beasiswa))
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Jenis Beasiswa:</span>
+                        <span class="font-bold text-amber-900 bg-amber-50 px-2.5 py-0.5 rounded-full text-xs border border-amber-200">{{ $registration->jenis_beasiswa }}</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs pt-1">
+                        <span class="text-gray-500">Berkas Beasiswa:</span>
+                        <span class="font-bold text-green-700 flex items-center gap-1">
+                            <svg class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                            Tautan Google Form Tersimpan
+                        </span>
+                    </div>
+                    @endif
+                    @if(!empty($registration->utbk_pu))
+                    @php
+                        $avgUtbk = ($registration->utbk_pu + $registration->utbk_ppu + $registration->utbk_pbm + $registration->utbk_pk + $registration->utbk_lbid + $registration->utbk_lbing + $registration->utbk_pm) / 7;
+                    @endphp
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Rata-rata UTBK:</span>
+                        <span class="font-bold text-blue-900 bg-blue-50 px-2.5 py-0.5 rounded-full text-xs border border-blue-200">{{ number_format($avgUtbk, 2) }}</span>
+                    </div>
+                    @endif
                     <div class="flex justify-between">
                         <span class="text-gray-500">Gelombang:</span>
                         @php
@@ -66,6 +88,19 @@
                     </div>
                 </div>
             </div>
+
+            @if(!empty($registration->jenis_beasiswa))
+            <!-- Alert Khusus Jalur Beasiswa -->
+            <div class="text-left bg-amber-50 rounded-2xl p-5 border border-amber-200 mb-8 max-w-md mx-auto">
+                <div class="flex items-center gap-2 mb-2 text-amber-900 font-bold text-sm">
+                    <svg class="w-5 h-5 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span>Informasi Validasi Berkas Beasiswa</span>
+                </div>
+                <p class="text-xs text-amber-800 leading-relaxed">
+                    Data dan tautan Google Form berkas <strong>{{ $registration->jenis_beasiswa }}</strong> Anda telah masuk ke sistem panitia. Tim Seleksi Beasiswa PMB STIKESMU akan memvalidasi keabsahan dokumen Anda. Status kelulusan dan pengumuman penerima beasiswa dapat dicek secara berkala di menu <strong>Cek Status Pendaftaran</strong>.
+                </p>
+            </div>
+            @endif
 
             <!-- Next Steps -->
             <div class="text-left bg-primary/5 rounded-2xl p-6 border border-primary/10 mb-8 max-w-md mx-auto">

@@ -90,23 +90,25 @@
                 Penerimaan Mahasiswa Baru 2026/2027
             </span>
             <h2 class="text-3xl md:text-4xl font-display font-extrabold text-white mb-4">Jadwal Gelombang Pendaftaran</h2>
-            <p class="text-gray-300 max-w-2xl mx-auto">Pendaftaran PMB STIKESMU Wonosobo dibuka dalam 5 gelombang. Segera daftarkan diri Anda sebelum kuota penuh!</p>
+            @php
+                $todayStr = now()->timezone('Asia/Jakarta')->toDateString();
+                $wavesDb = \App\Models\PmbWave::orderBy('id', 'asc')->get();
+                $waveCount = $wavesDb->count();
+                
+                $colors = [
+                    'from-blue-500 to-blue-700',
+                    'from-purple-500 to-purple-700',
+                    'from-orange-500 to-orange-700',
+                    'from-teal-500 to-teal-700',
+                    'from-pink-500 to-pink-700',
+                    'from-emerald-500 to-emerald-700',
+                    'from-indigo-500 to-indigo-700',
+                ];
+            @endphp
+            <p class="text-gray-300 max-w-2xl mx-auto">Pendaftaran PMB STIKESMU Wonosobo dibuka dalam {{ $waveCount }} gelombang. Segera daftarkan diri Anda sebelum kuota penuh!</p>
         </div>
 
-        @php
-            $todayStr = now()->timezone('Asia/Jakarta')->toDateString();
-            $wavesDb = \App\Models\PmbWave::orderBy('id', 'asc')->get();
-            
-            $colors = [
-                'from-blue-500 to-blue-700',
-                'from-purple-500 to-purple-700',
-                'from-orange-500 to-orange-700',
-                'from-teal-500 to-teal-700',
-                'from-pink-500 to-pink-700',
-            ];
-        @endphp
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 mb-12">
+        <div class="flex flex-wrap justify-center gap-5 mb-12">
             @foreach($wavesDb as $index => $w)
                 @php
                     $startStr = $w->tanggal_mulai->toDateString();
@@ -116,47 +118,44 @@
                     $isDone   = $endStr < $todayStr;
                     $colorBg  = $colors[$index % count($colors)];
                 @endphp
-                <div class="relative rounded-2xl overflow-hidden border transition duration-300 {{ $isActive ? 'border-accent shadow-[0_0_24px_rgba(251,197,49,0.4)] scale-105' : ($isDone ? 'border-white/10 opacity-50' : 'border-white/10 hover:border-white/30 hover:scale-105') }}">
+                <div class="w-full sm:w-60 md:w-64 max-w-[270px] relative rounded-2xl overflow-hidden border transition duration-300 {{ $isActive ? 'border-accent shadow-[0_0_24px_rgba(251,197,49,0.4)] scale-105' : ($isDone ? 'border-white/10 opacity-50' : 'border-white/10 hover:border-white/30 hover:scale-105') }}">
                     {{-- Gradient header --}}
-                    <div class="bg-gradient-to-br {{ $colorBg }} p-5 text-white text-center">
-                        <p class="text-xs font-bold uppercase tracking-widest opacity-80 mb-1">Gelombang</p>
-                        <p class="text-4xl font-display font-extrabold">{{ $index + 1 }}</p>
+                    <div class="bg-gradient-to-br {{ $colorBg }} p-4 text-white text-center">
+                        <p class="text-[11px] font-bold uppercase tracking-widest opacity-80 mb-0.5">Gelombang</p>
+                        <p class="text-3xl font-display font-extrabold">{{ $index + 1 }}</p>
                         @if($isActive)
-                            <span class="inline-block mt-2 bg-accent text-secondary text-xs font-extrabold px-3 py-1 rounded-full animate-pulse">
-                                ● Sedang Berlangsung
+                            <span class="inline-block mt-1.5 bg-accent text-secondary text-[11px] font-extrabold px-2.5 py-0.5 rounded-full animate-pulse">
+                                ● Berlangsung
                             </span>
                         @elseif($isDone)
-                            <span class="inline-block mt-2 bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full">
+                            <span class="inline-block mt-1.5 bg-white/20 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full">
                                 ✓ Selesai
                             </span>
                         @else
-                            <span class="inline-block mt-2 bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full">
-                                Akan Datang
+                            <span class="inline-block mt-1.5 bg-white/20 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full">
+                                Segera Dibuka
                             </span>
                         @endif
                     </div>
-                    {{-- Detail --}}
-                    <div class="bg-white/5 backdrop-blur-sm p-5 text-center">
-                        <p class="text-white font-bold text-sm mb-1">{{ $w->nama_gelombang }}</p>
-                        <p class="text-gray-300 text-xs leading-relaxed">{{ $w->tanggal_mulai->translatedFormat('d M') }} – {{ $w->tanggal_selesai->translatedFormat('d M Y') }}</p>
-                        @if($isActive)
-                            <a href="{{ route('pmb.jalur') }}" class="mt-4 inline-block w-full py-2.5 bg-accent text-secondary font-extrabold text-sm rounded-xl hover:bg-yellow-400 transition shadow-md">
-                                Daftar Sekarang
-                            </a>
-                        @elseif(!$isDone)
-                            <p class="mt-4 text-xs text-gray-400 italic">Pendaftaran belum dibuka</p>
+                    {{-- Body --}}
+                    <div class="bg-white/5 backdrop-blur-sm p-4 text-center text-white space-y-1.5">
+                        <p class="text-xs font-semibold opacity-90 truncate">{{ $w->nama_gelombang }}</p>
+                        <p class="text-[11px] text-gray-300">
+                            {{ $w->tanggal_mulai->translatedFormat('d M Y') }} - {{ $w->tanggal_selesai->translatedFormat('d M Y') }}
+                        </p>
+                        @if(!empty($w->keterangan))
+                            <p class="text-[11px] text-accent font-medium pt-1 border-t border-white/10 line-clamp-1">{{ $w->keterangan }}</p>
                         @endif
                     </div>
                 </div>
             @endforeach
         </div>
 
-        {{-- CTA Banner --}}
-        <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div>
-                <p class="text-xs text-accent font-bold uppercase tracking-widest mb-2">Jangan Lewatkan Kesempatan Ini!</p>
-                <h3 class="text-2xl font-display font-bold text-white mb-1">Biaya Pendaftaran: <span class="text-accent">Gratis</span></h3>
-                <p class="text-gray-300 text-sm">Tidak ada biaya pendaftaran online. Daftar sekarang dan raih impian Anda bersama STIKESMU Wonosobo.</p>
+        {{-- Call to action under waves --}}
+        <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="text-white text-center md:text-left">
+                <p class="font-display font-bold text-lg">Siap Bergabung dengan STIKES Muhammadiyah Wonosobo?</p>
+                <p class="text-gray-300 text-sm">Pendaftaran dilakukan 100% secara online. Cepat, transparan, dan mudah.</p>
             </div>
             <div class="flex flex-col sm:flex-row gap-3 shrink-0">
                 <a href="{{ route('pmb.jalur') }}" class="px-8 py-4 rounded-full bg-accent text-secondary font-extrabold text-base hover:bg-yellow-400 transition shadow-[0_0_20px_rgba(251,197,49,0.4)] whitespace-nowrap">
@@ -175,50 +174,52 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-16">
             <h2 class="text-3xl md:text-4xl font-display font-bold text-secondary mb-4">Program Studi Kami</h2>
-            <p class="text-gray-600 max-w-2xl mx-auto">Kami fokus pada pengembangan ilmu kesehatan yang inovatif dan terdepan melalui dua program studi unggulan tingkat Sarjana (S1).</p>
+            <p class="text-gray-600 max-w-2xl mx-auto">Kami fokus pada pengembangan ilmu kesehatan yang inovatif dan terdepan melalui program studi unggulan kami.</p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-5xl mx-auto">
-            <!-- S1 Ilmu Farmasi -->
-            <div class="group relative rounded-3xl overflow-hidden shadow-2xl transition duration-500 hover:shadow-[0_20px_50px_rgba(14,112,64,0.3)]">
-                <div class="absolute inset-0 bg-gradient-to-t from-secondary via-secondary/80 to-transparent z-10"></div>
-                <div class="h-80 bg-gray-200 relative">
-                    <!-- Placeholder background image -->
-                    <div class="absolute inset-0 bg-primary/20 mix-blend-multiply group-hover:scale-110 transition duration-700"></div>
+        <div class="flex flex-wrap justify-center gap-7 max-w-6xl mx-auto">
+            @forelse($programStudis ?? [] as $prodi)
+            <div class="w-full sm:w-[320px] md:w-[340px] max-w-[350px] group relative rounded-3xl overflow-hidden shadow-xl transition duration-500 hover:shadow-2xl hover:-translate-y-1 flex flex-col min-h-[350px] bg-secondary">
+                <!-- Background Image (Thumbnail) -->
+                @if($prodi->thumbnail)
+                    <img src="{{ asset('storage/' . $prodi->thumbnail) }}" alt="{{ $prodi->nama_prodi }}" onerror="this.style.display='none'" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition duration-700">
+                @endif
+                <div class="absolute inset-0 bg-gradient-to-br from-primary/30 to-secondary group-hover:scale-110 transition duration-700 -z-0"></div>
+                
+                <!-- Dark Gradient Overlay -->
+                <div class="absolute inset-0 bg-gradient-to-t from-secondary via-secondary/85 to-transparent z-10"></div>
+                
+                <!-- Badge Top Right -->
+                <div class="absolute top-4 right-4 z-20 flex gap-2">
+                    <span class="px-3 py-1 bg-primary/90 text-white text-xs font-bold rounded-full shadow-md backdrop-blur-sm">
+                        {{ $prodi->jenjang }}
+                    </span>
+                    @if($prodi->akreditasi)
+                    <span class="px-3 py-1 bg-accent/90 text-secondary text-xs font-bold rounded-full shadow-md backdrop-blur-sm">
+                        {{ $prodi->akreditasi }}
+                    </span>
+                    @endif
                 </div>
-                <div class="absolute bottom-0 left-0 w-full p-8 z-20">
-                    <div class="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-4 border border-white/30">
-                        <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+
+                <!-- Content Bottom -->
+                <div class="mt-auto p-6 z-20">
+                    <div class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-3 border border-white/30 text-white shadow-inner">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
                     </div>
-                    <h3 class="text-3xl font-display font-bold text-white mb-2">S1 Ilmu Farmasi</h3>
-                    <p class="text-gray-300 mb-6 opacity-0 group-hover:opacity-100 transition duration-500 transform translate-y-4 group-hover:translate-y-0 line-clamp-2">Mencetak tenaga farmasis profesional yang unggul dalam pelayanan kefarmasian klinis dan komunitas dengan pendekatan Islami.</p>
-                    <a href="{{ route('prodi.index') }}" class="inline-flex items-center text-accent font-semibold hover:text-white transition group-hover:underline">
-                        Lihat Kurikulum & Detail <svg class="w-5 h-5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                    <h3 class="text-xl font-display font-bold text-white mb-1.5 leading-snug">{{ $prodi->nama_prodi }}</h3>
+                    <p class="text-gray-300 text-xs mb-4 line-clamp-2 leading-relaxed">
+                        {{ $prodi->deskripsi ?? 'Program studi unggulan STIKES Muhammadiyah Wonosobo mencetak tenaga profesional berkarakter Islami.' }}
+                    </p>
+                    <a href="{{ route('prodi.index') }}" class="inline-flex items-center text-accent font-bold hover:text-white transition group-hover:underline text-xs">
+                        Lihat Profil & Kurikulum <svg class="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-1 transition duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                     </a>
                 </div>
             </div>
-
-            <!-- S1 Ilmu Gizi -->
-            <div class="group relative rounded-3xl overflow-hidden shadow-2xl transition duration-500 hover:shadow-[0_20px_50px_rgba(251,197,49,0.3)]">
-                <div class="absolute inset-0 bg-gradient-to-t from-secondary via-secondary/80 to-transparent z-10"></div>
-                <div class="h-80 bg-gray-200 relative">
-                    <!-- Placeholder background image -->
-                    <div class="absolute inset-0 bg-accent/20 mix-blend-multiply group-hover:scale-110 transition duration-700"></div>
-                </div>
-                <div class="absolute bottom-0 left-0 w-full p-8 z-20">
-                    <div class="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-4 border border-white/30">
-                        <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-3xl font-display font-bold text-white mb-2">S1 Ilmu Gizi</h3>
-                    <p class="text-gray-300 mb-6 opacity-0 group-hover:opacity-100 transition duration-500 transform translate-y-4 group-hover:translate-y-0 line-clamp-2">Mengembangkan ilmuwan gizi dan dietisien yang kompeten dalam penanganan gizi klinis, masyarakat, dan institusi.</p>
-                    <a href="{{ route('prodi.index') }}" class="inline-flex items-center text-accent font-semibold hover:text-white transition group-hover:underline">
-                        Lihat Kurikulum & Detail <svg class="w-5 h-5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-                    </a>
-                </div>
+            @empty
+            <div class="w-full text-center py-12 text-gray-500">
+                Belum ada program studi yang ditampilkan.
             </div>
         </div>
     </div>
@@ -232,54 +233,40 @@
             <p class="text-gray-600 max-w-2xl mx-auto">Ikuti terus perkembangan dan kegiatan terbaru dari STIKES Muhammadiyah Wonosobo.</p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <!-- News Card Dummy 1 -->
-            <div class="bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100 group">
-                <div class="h-48 bg-gray-200 relative overflow-hidden">
-                    <div class="absolute inset-0 bg-primary/20 group-hover:bg-transparent transition duration-300"></div>
+        <div class="flex flex-wrap justify-center gap-8 max-w-6xl mx-auto">
+            @forelse($latestPosts ?? [] as $post)
+            <div class="w-full sm:w-[320px] md:w-[350px] max-w-[360px] bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100 group flex flex-col">
+                <div class="h-48 bg-gray-100 relative overflow-hidden">
+                    @if($post->thumbnail && file_exists(public_path('storage/' . $post->thumbnail)))
+                        <img src="{{ asset('storage/' . $post->thumbnail) }}" alt="{{ $post->title }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                    @else
+                        <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/20 text-primary">
+                            <svg class="w-12 h-12 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>
+                        </div>
+                    @endif
+                    <div class="absolute top-4 left-4 bg-primary/90 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full shadow">
+                        {{ $post->category ?? 'Berita' }}
+                    </div>
                 </div>
-                <div class="p-6">
-                    <span class="text-xs font-bold text-primary uppercase tracking-wider mb-2 block">Pengumuman</span>
-                    <h3 class="text-xl font-display font-bold text-gray-900 mb-3 group-hover:text-primary transition">Jadwal Seleksi PMB Gelombang 1</h3>
-                    <p class="text-gray-600 text-sm mb-4 line-clamp-3">Pemberitahuan kepada seluruh calon mahasiswa baru yang telah mendaftar di gelombang pertama...</p>
-                    <a href="#" class="text-primary font-semibold hover:text-secondary flex items-center gap-1 transition">
+                <div class="p-6 flex-grow flex flex-col">
+                    <p class="text-xs text-gray-400 mb-2">{{ $post->created_at->translatedFormat('d F Y') }}</p>
+                    <h3 class="text-xl font-display font-bold text-gray-900 mb-3 group-hover:text-primary transition line-clamp-2">
+                        <a href="{{ route('posts.show', $post->slug) }}">{{ $post->title }}</a>
+                    </h3>
+                    <p class="text-gray-600 text-sm mb-4 line-clamp-3 flex-grow">
+                        {{ $post->excerpt ?? Str::limit(strip_tags($post->body), 100) }}
+                    </p>
+                    <a href="{{ route('posts.show', $post->slug) }}" class="text-primary font-bold hover:text-secondary flex items-center gap-1 transition text-sm mt-auto">
                         Baca selengkapnya 
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
                     </a>
                 </div>
             </div>
-            
-            <!-- News Card Dummy 2 -->
-            <div class="bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100 group">
-                <div class="h-48 bg-gray-200 relative overflow-hidden">
-                    <div class="absolute inset-0 bg-primary/20 group-hover:bg-transparent transition duration-300"></div>
-                </div>
-                <div class="p-6">
-                    <span class="text-xs font-bold text-primary uppercase tracking-wider mb-2 block">Akademik</span>
-                    <h3 class="text-xl font-display font-bold text-gray-900 mb-3 group-hover:text-primary transition">Panduan Pengisian KRS Semester Ganjil</h3>
-                    <p class="text-gray-600 text-sm mb-4 line-clamp-3">Mahasiswa diharapkan segera melakukan konsultasi dengan Dosen Pembimbing Akademik...</p>
-                    <a href="#" class="text-primary font-semibold hover:text-secondary flex items-center gap-1 transition">
-                        Baca selengkapnya 
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                    </a>
-                </div>
+            @empty
+            <div class="w-full py-8 text-center text-gray-500">
+                Belum ada berita terbaru yang dipublikasikan.
             </div>
-
-            <!-- News Card Dummy 3 -->
-            <div class="bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100 group">
-                <div class="h-48 bg-gray-200 relative overflow-hidden">
-                    <div class="absolute inset-0 bg-primary/20 group-hover:bg-transparent transition duration-300"></div>
-                </div>
-                <div class="p-6">
-                    <span class="text-xs font-bold text-primary uppercase tracking-wider mb-2 block">Kegiatan</span>
-                    <h3 class="text-xl font-display font-bold text-gray-900 mb-3 group-hover:text-primary transition">Bakti Sosial Mahasiswa Keperawatan</h3>
-                    <p class="text-gray-600 text-sm mb-4 line-clamp-3">Sebagai bentuk implementasi catur dharma perguruan tinggi Muhammadiyah, BEM mengadakan baksos...</p>
-                    <a href="#" class="text-primary font-semibold hover:text-secondary flex items-center gap-1 transition">
-                        Baca selengkapnya 
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                    </a>
-                </div>
-            </div>
+            @endforelse
         </div>
         
         <div class="text-center mt-12">

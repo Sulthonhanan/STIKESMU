@@ -42,7 +42,8 @@ class PmbController extends Controller
     public function create(Request $request)
     {
         $selectedJalur = $request->query('jalur', 'Jalur Nilai Rapor');
-        return view('pmb.register', compact('selectedJalur'));
+        $programStudis = \App\Models\ProgramStudi::active()->get();
+        return view('pmb.register', compact('selectedJalur', 'programStudis'));
     }
 
     /**
@@ -50,10 +51,12 @@ class PmbController extends Controller
      */
     public function store(Request $request)
     {
+        $jalur = $request->input('jalur_seleksi');
+
         $validated = $request->validate([
             // Identitas Mahasiswa
             'jalur_seleksi' => 'required|string|max:255',
-            'prodi' => 'required|string|in:S1 Farmasi,S1 Gizi',
+            'prodi' => 'required|string|exists:program_studis,nama_prodi',
             'nama_lengkap' => 'required|string|max:255',
             'nomor_ktp' => 'required|digits:16',
             'nisn' => 'required|digits:10',
@@ -102,15 +105,44 @@ class PmbController extends Controller
             'alamat_wali_rw' => 'nullable|string|max:10',
             'alamat_wali_desa' => 'nullable|string|max:255',
             'alamat_wali_kecamatan_kabupaten' => 'nullable|string|max:255',
-            'no_hp_wali' => 'nullable|string|max:20',
+
+            // === Jalur Beasiswa & Prestasi (required jika jalur ini dipilih) ===
+            'jenis_beasiswa' => ($jalur === 'Jalur Beasiswa & Prestasi')
+                ? 'required|string|max:255'
+                : 'nullable|string|max:255',
+            'link_berkas_beasiswa' => ($jalur === 'Jalur Beasiswa & Prestasi')
+                ? 'required|url|max:500'
+                : 'nullable|url|max:500',
+
+            // === Jalur Nilai UTBK-SNBT (required jika jalur ini dipilih) ===
+            'utbk_pu'   => ($jalur === 'Jalur Nilai UTBK-SNBT') ? 'required|numeric|between:200,900' : 'nullable|numeric|between:200,900',
+            'utbk_ppu'  => ($jalur === 'Jalur Nilai UTBK-SNBT') ? 'required|numeric|between:200,900' : 'nullable|numeric|between:200,900',
+            'utbk_pbm'  => ($jalur === 'Jalur Nilai UTBK-SNBT') ? 'required|numeric|between:200,900' : 'nullable|numeric|between:200,900',
+            'utbk_pk'   => ($jalur === 'Jalur Nilai UTBK-SNBT') ? 'required|numeric|between:200,900' : 'nullable|numeric|between:200,900',
+            'utbk_lbid' => ($jalur === 'Jalur Nilai UTBK-SNBT') ? 'required|numeric|between:200,900' : 'nullable|numeric|between:200,900',
+            'utbk_lbing'=> ($jalur === 'Jalur Nilai UTBK-SNBT') ? 'required|numeric|between:200,900' : 'nullable|numeric|between:200,900',
+            'utbk_pm'   => ($jalur === 'Jalur Nilai UTBK-SNBT') ? 'required|numeric|between:200,900' : 'nullable|numeric|between:200,900',
+            'link_sertifikat_utbk' => ($jalur === 'Jalur Nilai UTBK-SNBT') ? 'required|url|max:500' : 'nullable|url|max:500',
 
             // File Uploads
             'pas_foto' => 'required|image|max:2048',
-            'raport' => 'required|image|max:2048',
-            'ijazah' => 'required|image|max:2048',
+            'raport'   => 'required|image|max:2048',
+            'ijazah'   => 'required|image|max:2048',
 
             // Persetujuan
             'pernyataan' => 'accepted',
+        ], [
+            'jenis_beasiswa.required'      => 'Jenis Beasiswa harus dipilih untuk Jalur Beasiswa & Prestasi.',
+            'link_berkas_beasiswa.required' => 'Tautan Google Form berkas beasiswa wajib diisi.',
+            'link_berkas_beasiswa.url'     => 'Tautan berkas beasiswa harus berupa URL yang valid (dimulai dengan https://).',
+            'utbk_pu.required'   => 'Skor Penalaran Umum UTBK wajib diisi.',
+            'utbk_ppu.required'  => 'Skor Pengetahuan & Pemahaman Umum UTBK wajib diisi.',
+            'utbk_pbm.required'  => 'Skor Pemahaman Bacaan & Menulis UTBK wajib diisi.',
+            'utbk_pk.required'   => 'Skor Pengetahuan Kuantitatif UTBK wajib diisi.',
+            'utbk_lbid.required' => 'Skor Literasi Bahasa Indonesia UTBK wajib diisi.',
+            'utbk_lbing.required'=> 'Skor Literasi Bahasa Inggris UTBK wajib diisi.',
+            'utbk_pm.required'   => 'Skor Penalaran Matematika UTBK wajib diisi.',
+            'link_sertifikat_utbk.required' => 'Tautan sertifikat UTBK wajib diisi.',
         ]);
 
         // Generate nomor pendaftaran: TAHUN-XXXX (urut, tidak reuse nomor yang pernah dipakai)
@@ -170,6 +202,13 @@ class PmbController extends Controller
     public function uploadBuktiBayar(Request $request, $id)
     {
         $registration = PmbRegistration::findOrFail($id);
+
+        // Strip format rupiah (titik) sebelum validasi
+        if ($request->has('nominal')) {
+            $request->merge([
+                'nominal' => str_replace('.', '', $request->input('nominal'))
+            ]);
+        }
 
         $request->validate([
             'tahap_cicilan' => 'required|in:cicilan_1,cicilan_2',

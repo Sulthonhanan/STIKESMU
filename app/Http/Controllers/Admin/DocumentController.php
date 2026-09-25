@@ -32,6 +32,8 @@ class DocumentController extends Controller
 
         $validated['file_path'] = $request->file('file')->store('documents', 'public');
         $validated['file_name'] = $request->file('file')->getClientOriginalName();
+        $validated['user_id']   = auth()->id();
+        unset($validated['file']);
 
         Document::create($validated);
 
@@ -58,6 +60,7 @@ class DocumentController extends Controller
             $validated['file_path'] = $request->file('file')->store('documents', 'public');
             $validated['file_name'] = $request->file('file')->getClientOriginalName();
         }
+        unset($validated['file']);
 
         $document->update($validated);
 

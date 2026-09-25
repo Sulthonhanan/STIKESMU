@@ -4,7 +4,9 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    $latestPosts = \App\Models\Post::where('is_published', true)->latest()->take(3)->get();
+    $programStudis = \App\Models\ProgramStudi::active()->orderBy('kode_nim')->get();
+    return view('welcome', compact('latestPosts', 'programStudis'));
 });
 
 // ============================================
@@ -14,11 +16,13 @@ Route::get('/berita', [\App\Http\Controllers\PostController::class, 'index'])->n
 Route::get('/berita/{slug}', [\App\Http\Controllers\PostController::class, 'show'])->name('posts.show');
 
 Route::get('/dokumen', [\App\Http\Controllers\DocumentController::class, 'index'])->name('documents.index');
+Route::get('/dokumen/{document}/download', [\App\Http\Controllers\DocumentController::class, 'download'])->name('documents.download');
 
 Route::get('/halaman/{slug}', [\App\Http\Controllers\PageController::class, 'show'])->name('pages.show');
 
 Route::get('/program-studi', function () {
-    return view('prodi.index');
+    $programStudis = \App\Models\ProgramStudi::active()->orderBy('kode_nim')->get();
+    return view('prodi.index', compact('programStudis'));
 })->name('prodi.index');
 
 // PMB Online Public Routes
@@ -36,9 +40,12 @@ Route::middleware(['auth', 'verified', 'role:Super Admin|Admin CMS|Staff Panitia
     
     // CMS Routes (dibatasi Super Admin dan Admin CMS)
     Route::middleware(['role:Super Admin|Admin CMS'])->group(function() {
+        Route::post('posts/upload-image', [\App\Http\Controllers\Admin\PostController::class, 'uploadImage'])->name('posts.upload_image');
         Route::resource('posts', \App\Http\Controllers\Admin\PostController::class);
         Route::resource('documents', \App\Http\Controllers\Admin\DocumentController::class);
         Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
+        Route::patch('program-studi/{programStudi}/toggle-active', [\App\Http\Controllers\Admin\ProgramStudiController::class, 'toggleActive'])->name('program-studi.toggle_active');
+        Route::resource('program-studi', \App\Http\Controllers\Admin\ProgramStudiController::class);
     });
     
     // PMB Admin Routes
@@ -46,6 +53,8 @@ Route::middleware(['auth', 'verified', 'role:Super Admin|Admin CMS|Staff Panitia
     Route::get('pmb/print-rekap', [\App\Http\Controllers\Admin\PmbController::class, 'printRekap'])->name('pmb.print_rekap');
     Route::get('pmb-gelombang', [\App\Http\Controllers\Admin\PmbWaveController::class, 'index'])->name('pmb_waves.index');
     Route::post('pmb-gelombang', [\App\Http\Controllers\Admin\PmbWaveController::class, 'update'])->name('pmb_waves.update');
+    Route::post('pmb-gelombang/store', [\App\Http\Controllers\Admin\PmbWaveController::class, 'store'])->name('pmb_waves.store');
+    Route::delete('pmb-gelombang/{id}', [\App\Http\Controllers\Admin\PmbWaveController::class, 'destroy'])->name('pmb_waves.destroy');
     Route::get('pmb-biaya', [\App\Http\Controllers\Admin\PmbFeeController::class, 'index'])->name('pmb_fees.index');
     Route::post('pmb-biaya', [\App\Http\Controllers\Admin\PmbFeeController::class, 'update'])->name('pmb_fees.update');
     Route::get('pmb/{id}', [\App\Http\Controllers\Admin\PmbController::class, 'show'])->name('pmb.show');
@@ -67,3 +76,13 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+// Storage File Serving Fallback (Memastikan Gambar & Dokumen Pasti Terbuka di Hosting Nginx/Apache)
+Route::get('/storage/{path}', function ($path) {
+    $filePath = storage_path('app/public/' . $path);
+    if (!file_exists($filePath)) {
+        abort(404);
+    }
+    return response()->file($filePath);
+})->where('path', '.*');
+

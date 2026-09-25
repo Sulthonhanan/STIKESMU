@@ -134,8 +134,11 @@
                             <label class="block text-sm font-bold text-gray-700 mb-2">Program Studi Pilihan <span class="text-red-500">*</span></label>
                             <select name="prodi" class="w-full rounded-xl border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary/20 text-gray-900" required>
                                 <option value="" disabled selected>-- Pilih Program Studi --</option>
-                                <option value="S1 Farmasi" {{ old('prodi') === 'S1 Farmasi' ? 'selected' : '' }}>S1 Farmasi</option>
-                                <option value="S1 Gizi" {{ old('prodi') === 'S1 Gizi' ? 'selected' : '' }}>S1 Gizi</option>
+                                @foreach($programStudis ?? \App\Models\ProgramStudi::active()->get() as $prodi)
+                                <option value="{{ $prodi->nama_prodi }}" {{ old('prodi') === $prodi->nama_prodi ? 'selected' : '' }}>
+                                    {{ $prodi->nama_prodi }}{{ $prodi->gelar ? ' (' . $prodi->gelar . ')' : '' }}
+                                </option>
+                                @endforeach
                             </select>
                         </div>
                         <div>
@@ -424,8 +427,211 @@
                 <div x-show="step === 3" style="display: none;" x-transition.opacity.duration.300ms>
                     <h3 class="text-xl font-display font-bold text-secondary mb-6 flex items-center gap-2 border-b pb-3">
                         <svg class="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                        III. Unggah Pas Foto & Deklarasi
+                        III. Dokumen Khusus & Unggah Berkas
                     </h3>
+
+                    @php
+                        $isBeasiswa = ($selectedJalur === 'Jalur Beasiswa & Prestasi' || old('jalur_seleksi') === 'Jalur Beasiswa & Prestasi');
+                        $isUtbk = ($selectedJalur === 'Jalur Nilai UTBK-SNBT' || old('jalur_seleksi') === 'Jalur Nilai UTBK-SNBT');
+                    @endphp
+
+                    @if($isBeasiswa)
+                    <!-- SECTION KHUSUS JALUR BEASISWA & PRESTASI -->
+                    <div class="mb-8 p-6 bg-amber-50 rounded-2xl border border-amber-200">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-gray-900 text-base">Kelengkapan Jalur Beasiswa & Prestasi</h4>
+                                <p class="text-xs text-gray-600">Pilih jenis beasiswa dan cantumkan tautan Google Form pengumpulan berkas Anda.</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Jenis Beasiswa / Prestasi <span class="text-red-500">*</span></label>
+                                <select name="jenis_beasiswa" class="w-full rounded-xl border-gray-300 shadow-sm focus:border-primary focus:ring text-gray-900" required>
+                                    <option value="" disabled selected>-- Pilih Jenis Beasiswa --</option>
+                                    <option value="Beasiswa KIP-Kuliah (Kemendikbud)" {{ old('jenis_beasiswa') === 'Beasiswa KIP-Kuliah (Kemendikbud)' ? 'selected' : '' }}>Beasiswa KIP-Kuliah (Kemendikbud)</option>
+                                    <option value="Beasiswa Tahfizh Al-Qur'an (Min. 3 Juz)" {{ old('jenis_beasiswa') === "Beasiswa Tahfizh Al-Qur'an (Min. 3 Juz)" ? 'selected' : '' }}>Beasiswa Tahfizh Al-Qur'an (Min. 3 Juz)</option>
+                                    <option value="Beasiswa Kader Muhammadiyah / Aisyiyah" {{ old('jenis_beasiswa') === 'Beasiswa Kader Muhammadiyah / Aisyiyah' ? 'selected' : '' }}>Beasiswa Kader Muhammadiyah / Aisyiyah</option>
+                                    <option value="Beasiswa Prestasi Akademik (OSN/KTI)" {{ old('jenis_beasiswa') === 'Beasiswa Prestasi Akademik (OSN/KTI)' ? 'selected' : '' }}>Beasiswa Prestasi Akademik (OSN/KTI)</option>
+                                    <option value="Beasiswa Prestasi Non-Akademik (Olahraga/Seni)" {{ old('jenis_beasiswa') === 'Beasiswa Prestasi Non-Akademik (Olahraga/Seni)' ? 'selected' : '' }}>Beasiswa Prestasi Non-Akademik (Olahraga/Seni)</option>
+                                    <option value="Beasiswa Yayasan / Kemitraan Khusus" {{ old('jenis_beasiswa') === 'Beasiswa Yayasan / Kemitraan Khusus' ? 'selected' : '' }}>Beasiswa Yayasan / Kemitraan Khusus</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Tautan (Link) Google Form Bukti Berkas <span class="text-red-500">*</span></label>
+                                <input type="url" name="link_berkas_beasiswa" value="{{ old('link_berkas_beasiswa') }}" placeholder="https://forms.gle/... atau https://drive.google.com/..." class="w-full rounded-xl border-gray-300 shadow-sm focus:border-primary focus:ring text-gray-900" required>
+                                <p class="text-xs text-gray-500 mt-1">Masukkan URL Google Form yang sudah diisi atau link folder Google Drive berkas beasiswa Anda.</p>
+                                {{-- Peringatan akses link --}}
+                                <div class="mt-2 flex items-start gap-2 bg-yellow-50 border border-yellow-300 rounded-xl px-4 py-3">
+                                    <svg class="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                                    </svg>
+                                    <div class="text-xs text-yellow-800 leading-relaxed">
+                                        <p class="font-bold mb-0.5">⚠️ Penting — Pastikan Link Dapat Diakses!</p>
+                                        <p>Sebelum menempelkan tautan di sini, pastikan pengaturan berbagi (<em>share</em>) sudah diubah menjadi <strong>"Anyone with the link"</strong> (Siapa saja yang memiliki tautan). Panitia tidak akan bisa membuka berkas Anda jika link masih bersifat <em>private</em> atau memerlukan izin akses.</p>
+                                        <ul class="mt-1.5 space-y-0.5 list-disc list-inside text-yellow-700">
+                                            <li><strong>Google Drive:</strong> Klik kanan file → <em>Share</em> → ubah ke <em>"Anyone with the link – Viewer"</em></li>
+                                            <li><strong>Google Form:</strong> Pastikan form tidak memerlukan login akun Google untuk membukanya</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($isUtbk)
+                    <!-- SECTION KHUSUS JALUR UTBK-SNBT -->
+                    <div class="mb-8 p-6 bg-blue-50/70 rounded-2xl border border-blue-200 shadow-sm"
+                         x-data="{
+                            pu: '{{ old('utbk_pu', '') }}',
+                            ppu: '{{ old('utbk_ppu', '') }}',
+                            pbm: '{{ old('utbk_pbm', '') }}',
+                            pk: '{{ old('utbk_pk', '') }}',
+                            lbid: '{{ old('utbk_lbid', '') }}',
+                            lbing: '{{ old('utbk_lbing', '') }}',
+                            pm: '{{ old('utbk_pm', '') }}',
+                            get rataRata() {
+                                let list = [parseFloat(this.pu)||0, parseFloat(this.ppu)||0, parseFloat(this.pbm)||0, parseFloat(this.pk)||0, parseFloat(this.lbid)||0, parseFloat(this.lbing)||0, parseFloat(this.pm)||0];
+                                let filled = list.filter(v => v > 0);
+                                if (filled.length === 0) return '0.00';
+                                let sum = filled.reduce((a, b) => a + b, 0);
+                                return (sum / 7).toFixed(2);
+                            }
+                         }">
+                        <div class="flex items-center gap-3 mb-5 pb-4 border-b border-blue-200">
+                            <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm shrink-0">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-gray-900 text-base">Tabel Nilai Sertifikat UTBK-SNBT</h4>
+                                <p class="text-xs text-gray-600">Masukkan nilai 7 sub-tes sesuai Sertifikat Resmi UTBK BPPP Kemendikbudristek (Skor 200 - 900).</p>
+                            </div>
+                        </div>
+
+                        <!-- Table Design for Neat Alignment -->
+                        <div class="bg-white rounded-xl border border-blue-200 overflow-hidden shadow-sm mb-6">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-blue-600 text-white text-xs uppercase font-bold tracking-wider">
+                                        <th class="py-3 px-4 w-12 text-center">No</th>
+                                        <th class="py-3 px-4">Sub-Tes UTBK-SNBT</th>
+                                        <th class="py-3 px-4 w-44 md:w-56 text-center">Skor (200 - 900) <span class="text-red-300">*</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
+                                    <!-- Header TPS -->
+                                    <tr class="bg-blue-50/50 font-bold text-blue-900 text-xs tracking-wide">
+                                        <td colspan="3" class="py-2 px-4 uppercase">
+                                            A. Tes Potensi Skolastik (TPS)
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50/80 transition">
+                                        <td class="py-2.5 px-4 text-center font-bold text-gray-500">1</td>
+                                        <td class="py-2.5 px-4 font-medium text-gray-800">
+                                            Kemampuan Penalaran Umum (PU)
+                                        </td>
+                                        <td class="py-2 px-4">
+                                            <input type="number" step="0.01" min="200" max="900" name="utbk_pu" x-model="pu" placeholder="Contoh: 650.50" class="w-full text-center font-bold rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-1.5" required>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50/80 transition">
+                                        <td class="py-2.5 px-4 text-center font-bold text-gray-500">2</td>
+                                        <td class="py-2.5 px-4 font-medium text-gray-800">
+                                            Pengetahuan dan Pemahaman Umum (PPU)
+                                        </td>
+                                        <td class="py-2 px-4">
+                                            <input type="number" step="0.01" min="200" max="900" name="utbk_ppu" x-model="ppu" placeholder="Contoh: 620.00" class="w-full text-center font-bold rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-1.5" required>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50/80 transition">
+                                        <td class="py-2.5 px-4 text-center font-bold text-gray-500">3</td>
+                                        <td class="py-2.5 px-4 font-medium text-gray-800">
+                                            Kemampuan Memahami Bacaan dan Menulis (PBM)
+                                        </td>
+                                        <td class="py-2 px-4">
+                                            <input type="number" step="0.01" min="200" max="900" name="utbk_pbm" x-model="pbm" placeholder="Contoh: 580.25" class="w-full text-center font-bold rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-1.5" required>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50/80 transition">
+                                        <td class="py-2.5 px-4 text-center font-bold text-gray-500">4</td>
+                                        <td class="py-2.5 px-4 font-medium text-gray-800">
+                                            Pengetahuan Kuantitatif (PK)
+                                        </td>
+                                        <td class="py-2 px-4">
+                                            <input type="number" step="0.01" min="200" max="900" name="utbk_pk" x-model="pk" placeholder="Contoh: 610.00" class="w-full text-center font-bold rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-1.5" required>
+                                        </td>
+                                    </tr>
+
+                                    <!-- Header Literasi -->
+                                    <tr class="bg-blue-50/50 font-bold text-blue-900 text-xs tracking-wide">
+                                        <td colspan="3" class="py-2 px-4 uppercase">
+                                            B. Tes Literasi dan Penalaran Matematika
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50/80 transition">
+                                        <td class="py-2.5 px-4 text-center font-bold text-gray-500">5</td>
+                                        <td class="py-2.5 px-4 font-medium text-gray-800">
+                                            Literasi dalam Bahasa Indonesia (LBID)
+                                        </td>
+                                        <td class="py-2 px-4">
+                                            <input type="number" step="0.01" min="200" max="900" name="utbk_lbid" x-model="lbid" placeholder="Contoh: 640.00" class="w-full text-center font-bold rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-1.5" required>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50/80 transition">
+                                        <td class="py-2.5 px-4 text-center font-bold text-gray-500">6</td>
+                                        <td class="py-2.5 px-4 font-medium text-gray-800">
+                                            Literasi dalam Bahasa Inggris (LBING)
+                                        </td>
+                                        <td class="py-2 px-4">
+                                            <input type="number" step="0.01" min="200" max="900" name="utbk_lbing" x-model="lbing" placeholder="Contoh: 600.50" class="w-full text-center font-bold rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-1.5" required>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50/80 transition">
+                                        <td class="py-2.5 px-4 text-center font-bold text-gray-500">7</td>
+                                        <td class="py-2.5 px-4 font-medium text-gray-800">
+                                            Penalaran Matematika (PM)
+                                        </td>
+                                        <td class="py-2 px-4">
+                                            <input type="number" step="0.01" min="200" max="900" name="utbk_pm" x-model="pm" placeholder="Contoh: 590.00" class="w-full text-center font-bold rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-1.5" required>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="bg-blue-100/70 border-t-2 border-blue-300 font-bold">
+                                        <td colspan="2" class="py-3 px-4 text-right text-blue-900 text-sm uppercase tracking-wider">
+                                            Nilai Rata-Rata UTBK:
+                                        </td>
+                                        <td class="py-3 px-4 text-center">
+                                            <span class="text-xl font-extrabold text-blue-800 font-mono tracking-wider" x-text="rataRata">0.00</span>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <!-- Link Sertifikat UTBK -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Tautan (Link) Sertifikat UTBK (Google Drive / Cloud) <span class="text-red-500">*</span></label>
+                            <input type="url" name="link_sertifikat_utbk" value="{{ old('link_sertifikat_utbk') }}" placeholder="https://drive.google.com/file/d/... atau https://..." class="w-full rounded-xl border-gray-300 shadow-sm focus:border-blue-500 focus:ring text-gray-900" required>
+                            <p class="text-xs text-gray-500 mt-1">Masukkan URL link file PDF sertifikat nilai UTBK resmi Anda.</p>
+                            {{-- Peringatan akses link --}}
+                            <div class="mt-2 flex items-start gap-2 bg-yellow-50 border border-yellow-300 rounded-xl px-4 py-3">
+                                <svg class="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                                </svg>
+                                <div class="text-xs text-yellow-800 leading-relaxed">
+                                    <p class="font-bold mb-0.5">⚠️ Penting — Pastikan Link Dapat Diakses!</p>
+                                    <p>Pastikan pengaturan berbagi (<em>share</em>) file sertifikat di Google Drive sudah disetel ke <strong>"Anyone with the link"</strong> (Siapa saja yang memiliki link). Panitia tidak dapat memvalidasi nilai jika file tidak dapat dibuka.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
 
                     <!-- FILE PAS FOTO -->
                     <div class="mb-8" x-data="{ photoPreview: null }">

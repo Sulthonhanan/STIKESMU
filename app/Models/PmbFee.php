@@ -9,13 +9,5 @@ class PmbFee extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'prodi',
-        'gelombang',
-        'biaya_registrasi',
-        'ukt_semester_1',
-        'jas_almamater',
-        'osmb',
-        'ktm',
-    ];
+    protected $guarded = [];
 }

@@ -8,39 +8,72 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,600,700|courier-prime:400,700&display=swap" rel="stylesheet" />
     
-    @vite(['resources/css/app.css'])
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0e7040',
+                        secondary: '#073c22',
+                        accent: '#fbc531',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
 
     <style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
             color: #1f2937;
+            margin: 0;
+            padding: 0;
         }
         .box-letter {
-            width: 15px;
-            height: 18px;
-            border: 1px solid #9ca3af;
+            width: 14px;
+            height: 17px;
+            border: 1px solid #6b7280;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             font-family: 'Courier Prime', monospace;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
             text-transform: uppercase;
-            margin-right: 1px;
+            margin-right: 1.5px;
             background-color: white;
+            line-height: 1;
         }
         .print-area {
             background-color: white;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            max-width: 850px;
+            margin: 0 auto;
+        }
+        .kop-table {
+            width: 100%;
+            border-bottom: 3px double #073c22;
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+        .kop-logo {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
         }
         @media print {
             body {
-                background-color: white;
-                color: black;
-                font-size: 10px;
-                padding: 0;
-                margin: 0;
+                background-color: white !important;
+                color: black !important;
+                font-size: 9.5pt !important;
+                padding: 0 !important;
+                margin: 0 !important;
             }
             .no-print {
                 display: none !important;
@@ -61,50 +94,69 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 py-8">
+<body class="bg-gray-100 py-6">
 
     <!-- Floating Top Bar for Print Trigger -->
-    <div class="max-w-4xl mx-auto mb-6 px-4 no-print flex justify-between items-center bg-white p-4 rounded-2xl shadow-md border">
-        <div class="flex items-center gap-2">
-            <a href="/" class="text-sm font-semibold text-gray-600 hover:text-primary">&larr; Beranda</a>
+    <div class="max-w-4xl mx-auto mb-6 px-4 no-print flex justify-between items-center bg-white p-4 rounded-2xl shadow-md border border-gray-200">
+        <div class="flex items-center gap-3">
+            <a href="/" class="text-sm font-bold text-gray-600 hover:text-primary transition">&larr; Kembali ke Beranda</a>
             <span class="text-gray-300">|</span>
-            <span class="text-sm font-bold text-gray-700">Nomor Pendaftaran: {{ $registration->nomor_pendaftaran }}</span>
+            <span class="text-sm font-bold text-gray-800">Nomor Pendaftaran: <strong class="text-primary">{{ $registration->nomor_pendaftaran }}</strong></span>
         </div>
-        <button onclick="window.print()" class="px-5 py-2.5 bg-primary text-white font-bold rounded-lg hover:bg-primary/95 flex items-center gap-2 shadow transition">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 00-2 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-            Cetak Formulir
+        <button onclick="window.print()" class="px-6 py-2.5 bg-primary text-white font-bold text-sm rounded-xl hover:bg-secondary flex items-center gap-2 shadow-md transition" style="background-color: #0e7040; color: white;">
+            <svg class="w-4 h-4" style="width: 16px; height: 16px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 00-2 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+            <span>Cetak Formulir</span>
         </button>
     </div>
 
     <!-- Main Printable Area -->
-    <div class="print-area max-w-4xl mx-auto bg-white p-8 border rounded-lg shadow-sm">
+    <div class="print-area bg-white p-8 md:p-10 border border-gray-200 rounded-xl shadow-lg">
         
-        <!-- Header Kop Surat -->
-        <div class="flex items-center gap-4 border-b-4 border-secondary pb-4 mb-6 relative">
-            <img src="{{ asset('images/logo.png') }}" alt="Logo" class="h-20 w-auto object-contain">
-            <div class="flex-grow text-center">
-                <p class="text-sm font-bold tracking-wider text-gray-800 uppercase">Majelis Pendidikan Tinggi, Penelitian dan Pengembangan</p>
-                <p class="text-md font-bold tracking-wider text-gray-800 uppercase">Pimpinan Pusat Muhammadiyah</p>
-                <h1 class="text-2xl font-extrabold text-primary tracking-wide">STIKES MUHAMMADIYAH WONOSOBO</h1>
-                <p class="text-xs italic text-gray-600 font-semibold mt-0.5">"Cerdas, Berkarakter, Islami"</p>
-                <p class="text-xxs text-gray-500 mt-1">Jl. Lingkar Luar KM. 02, Jogoyitnan, Wonosobo Telp./WA +62 895-3852-50680 Website: http://stikesmuhwonosobo.ac.id</p>
-            </div>
-        </div>
+        <!-- Header Kop Surat (Menggunakan Tabel Stabil) -->
+        <table class="kop-table">
+            <tr>
+                <td style="width: 90px; vertical-align: middle; text-align: center;">
+                    <img src="{{ asset('images/logo.png') }}" alt="Logo STIKESMU" class="kop-logo" style="width: 80px; height: 80px;">
+                </td>
+                <td style="text-align: center; vertical-align: middle; padding-left: 10px;">
+                    <p style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #374151; margin: 0; letter-spacing: 0.5px;">Majelis Pendidikan Tinggi, Penelitian dan Pengembangan</p>
+                    <p style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #1f2937; margin: 2px 0 0 0; letter-spacing: 0.5px;">Pimpinan Pusat Muhammadiyah</p>
+                    <h1 style="font-size: 20px; font-weight: 900; color: #0e7040; margin: 3px 0; letter-spacing: 0.8px;">STIKES MUHAMMADIYAH WONOSOBO</h1>
+                    <p style="font-size: 11px; font-style: italic; font-weight: 600; color: #4b5563; margin: 0;">"Cerdas, Berkarakter, Islami"</p>
+                    <p style="font-size: 9.5px; color: #6b7280; margin: 3px 0 0 0;">Jl. Lingkar Luar KM. 02, Jogoyitnan, Wonosobo Telp./WA: +62 895-3852-50680 | Website: https://stikesmuhwonosobo.ac.id</p>
+                </td>
+            </tr>
+        </table>
 
         <div class="text-center mb-6">
-            <h2 class="text-lg font-bold text-gray-900 border-b inline-block px-4 pb-1">FORMULIR PENDAFTARAN MAHASISWA BARU</h2>
-            <p class="text-sm font-bold text-gray-700 mt-1">TAHUN AKADEMIK {{ date('Y') }}/{{ date('Y') + 1 }}</p>
+            <h2 class="text-base font-extrabold text-gray-900 border-b-2 border-gray-800 inline-block px-4 pb-0.5 uppercase tracking-wide">FORMULIR PENDAFTARAN MAHASISWA BARU</h2>
+            <p class="text-xs font-bold text-gray-700 mt-1">TAHUN AKADEMIK {{ date('Y') }}/{{ date('Y') + 1 }}</p>
         </div>
 
         @php
             $renderBoxes = function($string, $length = 30) {
-                $chars = str_split(str_pad(substr(strtoupper($string), 0, $length), $length, ' '));
+                $str = (string) ($string ?? '');
+                $str = strtoupper(trim($str));
+                $chars = mb_str_split(str_pad(mb_substr($str, 0, $length), $length, ' '));
                 $html = '';
                 foreach ($chars as $char) {
                     $html .= '<span class="box-letter">' . ($char === ' ' ? '&nbsp;' : e($char)) . '</span>';
                 }
                 return $html;
             };
+
+            $rawNomor = (string) ($registration->nomor_pendaftaran ?? '');
+            $numParts = explode('-', $rawNomor);
+            if (count($numParts) >= 3) {
+                $yearStr = $numParts[1];
+                $seqStr = $numParts[2];
+            } elseif (count($numParts) === 2) {
+                $yearStr = $numParts[0];
+                $seqStr = $numParts[1];
+            } else {
+                $yearStr = date('Y');
+                $seqStr = $rawNomor ?: '0001';
+            }
         @endphp
 
         <!-- DATA CALON MAHASISWA BARU -->
@@ -116,11 +168,6 @@
                         <td class="w-1/4 py-1.5 font-bold text-gray-700">NOMOR PENDAFTARAN</td>
                         <td class="w-2 py-1.5 text-gray-500">:</td>
                         <td class="py-1.5 flex items-center gap-1">
-                            @php
-                                $numParts = explode('-', $registration->nomor_pendaftaran);
-                                $yearStr = $numParts[0] ?? date('Y');
-                                $seqStr = $numParts[1] ?? '0001';
-                            @endphp
                             {!! $renderBoxes($yearStr, 4) !!}
                             <span class="mx-1 text-gray-500 font-bold">-</span>
                             {!! $renderBoxes($seqStr, 4) !!}
@@ -137,22 +184,34 @@
                         <td class="w-2 py-1.5 text-gray-500">:</td>
                         <td class="py-1.5 font-bold text-gray-900">{{ $registration->jalur_seleksi ?? 'Jalur Nilai Rapor' }}</td>
                     </tr>
+                    @if(!empty($registration->jenis_beasiswa))
+                    <tr class="align-middle">
+                        <td class="w-1/4 py-1.5 font-bold text-gray-700">JENIS BEASISWA</td>
+                        <td class="w-2 py-1.5 text-gray-500">:</td>
+                        <td class="py-1.5 font-bold text-primary">{{ $registration->jenis_beasiswa }}</td>
+                    </tr>
+                    @endif
                     <tr class="align-middle">
                         <td class="py-1.5 font-bold text-gray-700">PROGRAM STUDI</td>
                         <td class="text-gray-500">:</td>
-                        <td class="py-1.5 flex items-center gap-4 font-bold">
-                            <label class="inline-flex items-center">
-                                <span class="w-3.5 h-3.5 border border-black flex items-center justify-center mr-1 text-xxs font-bold">
-                                    {{ $registration->prodi === 'S1 Farmasi' ? 'v' : '' }}
-                                </span>
-                                S1 Farmasi
-                            </label>
-                            <label class="inline-flex items-center">
-                                <span class="w-3.5 h-3.5 border border-black flex items-center justify-center mr-1 text-xxs font-bold">
-                                    {{ $registration->prodi === 'S1 Gizi' ? 'v' : '' }}
-                                </span>
-                                S1 Gizi
-                            </label>
+                        <td class="py-1.5 flex items-center gap-4 font-bold flex-wrap">
+                            @php
+                                $prodiList = class_exists('\App\Models\ProgramStudi') && \Illuminate\Support\Facades\Schema::hasTable('program_studis')
+                                    ? \App\Models\ProgramStudi::orderBy('kode_nim')->get()
+                                    : collect();
+                            @endphp
+                            @if($prodiList->isNotEmpty())
+                                @foreach($prodiList as $ps)
+                                <label class="inline-flex items-center">
+                                    <span class="w-3.5 h-3.5 border border-black flex items-center justify-center mr-1 text-xxs font-bold">
+                                        {{ $registration->prodi === $ps->nama_prodi ? 'v' : '' }}
+                                    </span>
+                                    {{ $ps->nama_prodi }}
+                                </label>
+                                @endforeach
+                            @else
+                                <span class="text-gray-900 font-bold">{{ $registration->prodi }}</span>
+                            @endif
                         </td>
                     </tr>
                     <tr class="align-middle">
@@ -205,7 +264,7 @@
                         <td class="py-1.5 font-bold text-gray-700">TEMPAT / TGL. LAHIR</td>
                         <td class="text-gray-500">:</td>
                         <td class="py-1.5 font-semibold text-gray-800">
-                            {{ $registration->tempat_lahir }} / {{ \Carbon\Carbon::parse($registration->tanggal_lahir)->translatedFormat('d-m-Y') }}
+                            {{ $registration->tempat_lahir ?? '-' }} / {{ !empty($registration->tanggal_lahir) ? \Carbon\Carbon::parse($registration->tanggal_lahir)->translatedFormat('d-m-Y') : '-' }}
                         </td>
                     </tr>
                     <tr class="align-middle">
@@ -436,7 +495,7 @@
 
             <!-- Signature Block -->
             <div class="text-center w-56 text-xs">
-                <p class="mb-1 text-gray-700">Wonosobo, {{ $registration->created_at->translatedFormat('d F Y') }}</p>
+                <p class="mb-1 text-gray-700">Wonosobo, {{ $registration->created_at ? $registration->created_at->translatedFormat('d F Y') : now()->translatedFormat('d F Y') }}</p>
                 <p class="font-bold text-gray-700">Pendaftar</p>
                 <div class="h-20 flex items-center justify-center italic text-gray-300">
                     ( Tanda Tangan )

@@ -65,6 +65,12 @@
                     {{ $registration->jalur_seleksi ?? 'Jalur Nilai Rapor' }}
                 </span>
             </div>
+            @if(!empty($registration->nim))
+            <div class="mt-3 p-3 bg-emerald-50 rounded-xl border border-emerald-200">
+                <span class="text-xs text-emerald-800 font-bold uppercase block mb-0.5">NIM Resmi Mahasiswa</span>
+                <span class="text-base font-extrabold text-emerald-700 font-mono select-all">{{ $registration->nim }}</span>
+            </div>
+            @endif
         </div>
 
         <!-- Status Action Box -->
@@ -189,7 +195,25 @@
                         <textarea name="catatan" rows="2" placeholder="Contoh: Bukti transfer terverifikasi lunas di rekening Bank BRI." class="w-full rounded-xl border-gray-300 shadow-sm text-xs p-2.5">{{ $registration->catatan_pembayaran }}</textarea>
                     </div>
                     <button type="submit" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-md transition">
-                        Update & Sync Keuangan ke SIA
+                        Update & Sync Keuangan ke SIAKAD
+                    </button>
+                </form>
+
+                <!-- INFO NIM RESMI MAHASISWA -->
+                @if($registration->nim)
+                    <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-3.5 mt-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">NIM Resmi:</span>
+                            <span class="font-mono font-extrabold text-emerald-700 text-sm tracking-widest bg-white px-2.5 py-0.5 rounded-lg border border-emerald-300">{{ $registration->nim }}</span>
+                        </div>
+                    </div>
+                @endif
+
+                <form action="{{ route('admin.pmb.sync_sia', $registration->id) }}" method="POST" class="pt-2">
+                    @csrf
+                    <button type="submit" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                        Sinkronkan Ulang ke SIAKAD
                     </button>
                 </form>
             @else
@@ -267,6 +291,83 @@
                 </div>
             </div>
         </div>
+
+        @if(!empty($registration->jenis_beasiswa) || !empty($registration->utbk_pu))
+        <!-- Section Khusus Jalur Seleksi -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="bg-gray-50 px-6 py-4 border-b border-gray-100">
+                <h3 class="font-display font-bold text-secondary text-md flex items-center gap-2">
+                    <svg class="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                    Berkas & Nilai Khusus Jalur Seleksi ({{ $registration->jalur_seleksi }})
+                </h3>
+            </div>
+            <div class="p-6 text-sm">
+                @if(!empty($registration->jenis_beasiswa))
+                <div class="space-y-3">
+                    <div>
+                        <span class="text-xs text-gray-400 font-bold uppercase block">Jenis Beasiswa / Prestasi</span>
+                        <span class="font-bold text-gray-900 text-base">{{ $registration->jenis_beasiswa }}</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-gray-400 font-bold uppercase block">Tautan (Link) Google Form Berkas Beasiswa</span>
+                        <a href="{{ $registration->link_berkas_beasiswa }}" target="_blank" class="text-primary hover:underline font-bold break-all flex items-center gap-1.5 mt-1">
+                            <span>{{ $registration->link_berkas_beasiswa }}</span>
+                            <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                        </a>
+                    </div>
+                </div>
+                @endif
+
+                @if(!empty($registration->utbk_pu))
+                @php
+                    $scores = [$registration->utbk_pu, $registration->utbk_ppu, $registration->utbk_pbm, $registration->utbk_pk, $registration->utbk_lbid, $registration->utbk_lbing, $registration->utbk_pm];
+                    $avgScore = number_format(array_sum($scores) / 7, 2);
+                @endphp
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between bg-blue-50 p-4 rounded-xl border border-blue-200">
+                        <span class="font-bold text-gray-800">Skor Rata-Rata UTBK-SNBT:</span>
+                        <span class="text-xl font-extrabold text-blue-700 font-mono">{{ $avgScore }}</span>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div class="p-2.5 bg-gray-50 rounded-lg border text-center">
+                            <span class="text-xxs text-gray-500 font-bold block uppercase">1. Penalaran Umum</span>
+                            <span class="font-bold text-gray-800 font-mono text-sm">{{ $registration->utbk_pu }}</span>
+                        </div>
+                        <div class="p-2.5 bg-gray-50 rounded-lg border text-center">
+                            <span class="text-xxs text-gray-500 font-bold block uppercase">2. Pengetahuan Umum</span>
+                            <span class="font-bold text-gray-800 font-mono text-sm">{{ $registration->utbk_ppu }}</span>
+                        </div>
+                        <div class="p-2.5 bg-gray-50 rounded-lg border text-center">
+                            <span class="text-xxs text-gray-500 font-bold block uppercase">3. Bacaan & Menulis</span>
+                            <span class="font-bold text-gray-800 font-mono text-sm">{{ $registration->utbk_pbm }}</span>
+                        </div>
+                        <div class="p-2.5 bg-gray-50 rounded-lg border text-center">
+                            <span class="text-xxs text-gray-500 font-bold block uppercase">4. Kuantitatif</span>
+                            <span class="font-bold text-gray-800 font-mono text-sm">{{ $registration->utbk_pk }}</span>
+                        </div>
+                        <div class="p-2.5 bg-gray-50 rounded-lg border text-center">
+                            <span class="text-xxs text-gray-500 font-bold block uppercase">5. Literasi B. Indo</span>
+                            <span class="font-bold text-gray-800 font-mono text-sm">{{ $registration->utbk_lbid }}</span>
+                        </div>
+                        <div class="p-2.5 bg-gray-50 rounded-lg border text-center">
+                            <span class="text-xxs text-gray-500 font-bold block uppercase">6. Literasi B. Ing</span>
+                            <span class="font-bold text-gray-800 font-mono text-sm">{{ $registration->utbk_lbing }}</span>
+                        </div>
+                        <div class="p-2.5 bg-gray-50 rounded-lg border text-center">
+                            <span class="text-xxs text-gray-500 font-bold block uppercase">7. Penalaran Mtk</span>
+                            <span class="font-bold text-gray-800 font-mono text-sm">{{ $registration->utbk_pm }}</span>
+                        </div>
+                        <div class="p-2.5 bg-gray-50 rounded-lg border text-center flex flex-col justify-center">
+                            <a href="{{ $registration->link_sertifikat_utbk }}" target="_blank" class="text-xs font-bold text-primary hover:underline">
+                                Buka Sertifikat &rarr;
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                @endif
+            </div>
+        </div>
+        @endif
 
         <!-- Section 2: Data Orang Tua Kandung -->
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
